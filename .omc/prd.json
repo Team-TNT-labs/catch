@@ -1,0 +1,125 @@
+{
+  "project": "Catch — iPhone 스티커 수집 앱",
+  "plan": ".omc/plans/catch-app-plan.md",
+  "platform": "iOS 17.0+, iPhone only (Swift 6, Xcode 26, built/tested against installed iOS 26 SDK)",
+  "notes": "카메라/자이로/흔들기 런타임은 실기기 전용. 시뮬레이터에선 빌드·컴파일·앱 기동·물리 씬 렌더까지만 자동 검증.",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "프로젝트 스캐폴딩 (XcodeGen + 빌드 통과)",
+      "priority": 1,
+      "passes": true,
+      "acceptanceCriteria": [
+        "project.yml 존재, deploymentTarget iOS 17.0, target name Catch",
+        "Info.plist에 NSCameraUsageDescription, 세로 고정(UISupportedInterfaceOrientations=Portrait) 포함",
+        "xcodegen generate 성공 → Catch.xcodeproj 생성",
+        "xcodebuild -scheme Catch -sdk iphonesimulator build 성공 (exit 0, BUILD SUCCEEDED)",
+        "CatchApp.swift @main 진입점 + 빈 HomeView 표시"
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "카메라 캡처 (CameraController, CameraView)",
+      "priority": 2,
+      "passes": true,
+      "acceptanceCriteria": [
+        "CameraController가 AVCaptureSession+AVCaptureDeviceInput(후면)+AVCapturePhotoOutput 구성",
+        "CameraView가 UIViewRepresentable로 AVCaptureVideoPreviewLayer 호스팅 + 셔터 버튼",
+        "권한 진입 시 AVCaptureDevice.authorizationStatus 분기: notDetermined→requestAccess, denied→설정 딥링크 안내",
+        "capturePhoto가 AVCapturePhotoCaptureDelegate로 UIImage/CGImage 반환",
+        "빌드 성공(컴파일 통과)"
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "누끼 + 방향 정규화 (BackgroundRemovalService)",
+      "priority": 3,
+      "passes": true,
+      "acceptanceCriteria": [
+        "VNGenerateForegroundInstanceMaskRequest + VNImageRequestHandler 사용",
+        "generateMaskedImage(ofInstances:from:croppedToInstancesExtent:true)로 투명배경 추출, 마스크 0개면 nil 반환",
+        "CIContext.createCGImage로 alpha 보존 PNG 생성",
+        "UIGraphicsImageRenderer로 imageOrientation 정규화 단계(Step 2.5) 구현 — SKTexture 회전 버그 방지",
+        "빌드 성공"
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Catch 프리뷰 + 영구 저장 (CutoutPreviewView, StickerStore, Sticker)",
+      "priority": 4,
+      "passes": true,
+      "acceptanceCriteria": [
+        "Sticker(Codable, id/filename/createdAt) 모델 존재",
+        "StickerStore.save: 정규화 PNG를 Documents/stickers/<uuid>.png + 256px 바디 캐시(<uuid>_body.png) 저장, manifest.json 갱신",
+        "StickerStore.loadAll()/delete(id:) 구현(원본·바디·매니페스트 정리)",
+        "CutoutPreviewView가 누끼 결과 표시 + Catch/다시찍기 버튼",
+        "빌드 성공"
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "물리 씬 기본 (StickerScene, HomeView, SpriteView)",
+      "priority": 5,
+      "passes": true,
+      "acceptanceCriteria": [
+        "HomeView가 SpriteView 풀스크린 + 카메라 버튼 오버레이(.allowsHitTesting 관리)",
+        "StickerScene anchorPoint=(0,0), edgeLoopFrom:frame 벽, scaleMode=.resizeFill",
+        "addSticker: 표시 크기 정규화(긴 변 120~150pt)해 상단에서 낙하",
+        "loadAll 결과를 x 분산+랜덤 지연으로 순차 투하(동시 겹침 폭발 방지)",
+        "빌드 성공 + 시뮬레이터에서 앱 기동(크래시 없음)"
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "실루엣 충돌 바디",
+      "priority": 6,
+      "passes": true,
+      "acceptanceCriteria": [
+        "SKPhysicsBody(texture:alphaThreshold:0.5,size:) 256px 다운스케일 바디 사용",
+        "다운스케일 바디 이미지는 저장 시점 캐시 재사용",
+        "restitution 0.1, friction 0.4, allowsRotation=true 설정",
+        "빌드 성공"
+      ]
+    },
+    {
+      "id": "US-007",
+      "title": "자이로 중력 (MotionService)",
+      "priority": 7,
+      "passes": true,
+      "acceptanceCriteria": [
+        "CMMotionManager.startDeviceMotionUpdates → deviceMotion.gravity로 physicsWorld.gravity 갱신",
+        "세로 고정 기준 중력 벡터 부호 보정",
+        "빌드 성공 (런타임 굴림은 실기기 검증 항목으로 명시)"
+      ]
+    },
+    {
+      "id": "US-008",
+      "title": "흔들기 섞임 + 드래그/던지기 + 길게눌러 삭제",
+      "priority": 8,
+      "passes": true,
+      "acceptanceCriteria": [
+        "흔들기: CMMotionManager.userAcceleration 임계값 → 전체 노드 랜덤 applyImpulse (motionEnded 미사용)",
+        "드래그: touchesBegan에서 isDynamic=false, touchesMoved position 직접 이동, touchesEnded isDynamic=true+velocity 적용",
+        "길게눌러 개별 삭제: 0.5s 이동없이 유지 시 노드 제거+StickerStore.delete, 드래그와 임계거리로 구분",
+        "빌드 성공 (런타임은 실기기 검증 명시)"
+      ]
+    },
+    {
+      "id": "US-009",
+      "title": "성능 튜닝 & 마감",
+      "priority": 9,
+      "passes": true,
+      "acceptanceCriteria": [
+        "물리 바디 생성: 백그라운드는 CGImage 리사이즈까지, SKPhysicsBody/SKTexture/노드추가는 메인 스레드",
+        "정지 바디 sleep 활용, SKView.showsFPS(디버그)",
+        "빈 상태 안내 + 카메라 버튼 디자인 + 앱 아이콘 placeholder",
+        "lsp_diagnostics 0 errors, 최종 빌드 성공"
+      ]
+    }
+  ],
+  "verification": {
+    "build": "xcodebuild -sdk iphonesimulator BUILD SUCCEEDED (0 errors, 0 code warnings)",
+    "runtime_sim": "앱 기동 무크래시, 빈 상태 렌더 확인; 테스트 스티커 3종 주입→낙하→바닥 더미 안착, 별 실루엣 외곽 충돌(기울어 안착) 스크린샷 확인",
+    "device_only_pending": "카메라 캡처/Vision 누끼/자이로 중력/흔들기/드래그·던지기/길게눌러삭제 런타임은 실기기 필요(컴파일·로직 검증 완료)"
+  }
+}

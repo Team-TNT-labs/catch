@@ -1,0 +1,14 @@
+# Xcode / build artifacts
+build/
+build-device/
+DerivedData/
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+*.xcuserstate
+
+# macOS
+.DS_Store
+
+# OMC working state (plans/prd/progress are kept as docs)
+.omc/state/

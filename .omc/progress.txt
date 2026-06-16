@@ -1,0 +1,40 @@
+Catch — 구현 진행 기록
+
+[환경]
+- Xcode 26.4.1 / Swift 6.3.1 / XcodeGen 2.44.1 / iOS 26.4 SDK + 시뮬레이터
+- SWIFT_VERSION 5.0 (project.yml) — 엄격 동시성 경고를 에러로 만들지 않기 위함
+- 빌드 검증: xcodebuild -sdk iphonesimulator. 카메라/자이로/흔들기 런타임은 실기기 전용.
+- 주의: 편집 중 SourceKit이 내뱉는 'No such module UIKit' / 'CMMotionManager unavailable in macOS' /
+  크로스파일 'Cannot find type'는 전부 단독 파싱 false positive. 진짜 검증은 xcodebuild.
+
+[US-001] 프로젝트 스캐폴딩 — DONE (BUILD SUCCEEDED 확인)
+- project.yml (deploymentTarget 17.0, Portrait 고정, NSCameraUsageDescription), CatchApp.swift, HomeView.swift
+
+[구현된 파일]
+- Models/Sticker.swift: Codable(id, filename, bodyFilename, createdAt)
+- Utils/ImageUtils.swift: UIImage.orientationNormalized()(Critic MAJOR #1), resized(maxDimension:)
+- Services/StickerStore.swift: save(정규화+256px 바디 캐시), loadAll, delete, image/bodyImage
+- Services/BackgroundRemovalService.swift: VNGenerateForegroundInstanceMaskRequest, noSubject 처리
+- Services/CameraController.swift: AVCaptureSession+PhotoOutput, authorizationStatus 분기, async capture
+- Services/MotionService.swift: CMMotionManager gravity→onGravity, userAcceleration→onShake(motionEnded 미사용)
+- Physics/StickerScene.swift: anchorPoint(0,0), edgeLoop 벽, 실루엣 바디, 시차투하, 드래그/던지기, 흔들기, 길게눌러삭제
+- Views/CameraView.swift(CameraPreview), CutoutPreviewView, CameraFlowView, HomeView(SpriteView+카메라버튼)
+
+[설계 메모]
+- 씬은 SceneHolder(ObservableObject)로 1회 생성해 SpriteView에 전달(뷰 갱신에도 유지).
+- 드래그 전략: isDynamic=false→position 직접 이동→해제 시 velocity 적용(텔레포트 방지, Critic MAJOR #3).
+- 삭제 vs 드래그 구분: dragThreshold(12pt) 이동하면 드래그, 안 움직이고 0.5s면 long-press 삭제.
+- 물리 바디는 메인스레드에서 생성(SKPhysicsBody(texture:) thread-safety 미보장, Critic minor #7).
+
+[다음] US-002~009 코드 작성 완료, 전체 빌드 검증 중. 빌드 그린 후 스토리별 AC 대조 → 시뮬레이터 기동 → reviewer → deslop.
+
+[최종 — 리뷰 + 실기기 배포 완료]
+- code-reviewer 검증: CRITICAL 1 + MAJOR 2 발견 → 전부 수정.
+  1) capturePhoto 중복 호출 가드(continuation 덮어쓰기/누수 방지) + 셔터 .disabled(isProcessing)
+  2) configure() 상태 레이스 → continuation이 Bool 반환하도록 동기화
+  3) manifest 쓰기 .atomic 옵션
+- 재빌드 클린(BUILD SUCCEEDED, 0 errors).
+- 실기기 배포: 디바이스 "GO"(iPhone 17 Pro, iOS 27)는 팀 RP5GZ99V95(tntlabs) 소속.
+  자동 서명(Apple Development: Jahyeon Ko)으로 device build → devicectl install → launch 성공.
+  bundleID=com.catch.app. (초기 76VH4C65NV 팀 오지정 → RP5GZ99V95로 정정)
+- 실기기 기능 테스트(카메라/누끼/자이로/흔들기/드래그/삭제)는 이제 사용자가 앱에서 직접 확인 가능.
