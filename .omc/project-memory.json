@@ -1,0 +1,289 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1781661552220,
+  "projectRoot": "/Users/go/develop/catch",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "Catch": {
+      "path": "Catch",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1781661552203,
+      "keyFiles": [
+        "CatchApp.swift",
+        "Info.plist"
+      ]
+    },
+    "Catch.xcodeproj": {
+      "path": "Catch.xcodeproj",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1781661552203,
+      "keyFiles": [
+        "project.pbxproj"
+      ]
+    },
+    "build": {
+      "path": "build",
+      "purpose": "Build output",
+      "fileCount": 1,
+      "lastAccessed": 1781661552204,
+      "keyFiles": [
+        "info.plist"
+      ]
+    },
+    "build-device": {
+      "path": "build-device",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1781661552204,
+      "keyFiles": [
+        "info.plist"
+      ]
+    },
+    "Catch/Models": {
+      "path": "Catch/Models",
+      "purpose": "Data models",
+      "fileCount": 1,
+      "lastAccessed": 1781661552204,
+      "keyFiles": [
+        "Sticker.swift"
+      ]
+    },
+    "Catch/Services": {
+      "path": "Catch/Services",
+      "purpose": "Business logic services",
+      "fileCount": 4,
+      "lastAccessed": 1781661552204,
+      "keyFiles": [
+        "BackgroundRemovalService.swift",
+        "CameraController.swift",
+        "MotionService.swift"
+      ]
+    },
+    "Catch/Utils": {
+      "path": "Catch/Utils",
+      "purpose": "Utility functions",
+      "fileCount": 1,
+      "lastAccessed": 1781661552205,
+      "keyFiles": [
+        "ImageUtils.swift"
+      ]
+    },
+    "Catch/Views": {
+      "path": "Catch/Views",
+      "purpose": "View templates",
+      "fileCount": 4,
+      "lastAccessed": 1781661552205,
+      "keyFiles": [
+        "CameraFlowView.swift",
+        "CameraView.swift",
+        "HomeView.swift"
+      ]
+    },
+    "build/Build": {
+      "path": "build/Build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1781661552205,
+      "keyFiles": []
+    },
+    "build-device/Build": {
+      "path": "build-device/Build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1781661552205,
+      "keyFiles": []
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "project.yml",
+      "accessCount": 3,
+      "lastAccessed": 1781663755966,
+      "type": "file"
+    },
+    {
+      "path": "Catch/CatchApp.swift",
+      "accessCount": 2,
+      "lastAccessed": 1781663894129,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/StickerStore.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781662592899,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Models/Sticker.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781662593341,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/HomeView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781662594440,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Physics/StickerScene.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781662594809,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/CameraView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781662595385,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/ScanRevealView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781662595849,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Info.plist",
+      "accessCount": 1,
+      "lastAccessed": 1781662596322,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/CameraFlowView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781662609089,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/BackgroundRemovalService.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781662609524,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/MotionService.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781662610050,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Utils/ImageUtils.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781662610460,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/CameraController.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781662611038,
+      "type": "file"
+    },
+    {
+      "path": "supabase/migrations/0001_init.sql",
+      "accessCount": 1,
+      "lastAccessed": 1781663498053,
+      "type": "file"
+    },
+    {
+      "path": "supabase/migrations/0002_functions.sql",
+      "accessCount": 1,
+      "lastAccessed": 1781663516080,
+      "type": "file"
+    },
+    {
+      "path": "supabase/migrations/0003_rls.sql",
+      "accessCount": 1,
+      "lastAccessed": 1781663534944,
+      "type": "file"
+    },
+    {
+      "path": "supabase/migrations/0004_storage.sql",
+      "accessCount": 1,
+      "lastAccessed": 1781663559044,
+      "type": "file"
+    },
+    {
+      "path": "supabase/migrations/0005_rpc.sql",
+      "accessCount": 1,
+      "lastAccessed": 1781663569947,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Catch.entitlements",
+      "accessCount": 1,
+      "lastAccessed": 1781663762698,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/SupabaseManager.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781663773617,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Models/Profile.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781663809884,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/AppleSignIn.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781663829353,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/AuthService.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781663841829,
+      "type": "file"
+    },
+    {
+      "path": "Catch/App/RootView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781663858169,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/Auth/SignInView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781663871102,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/Auth/OnboardingUsernameView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781663888741,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

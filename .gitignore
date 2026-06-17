@@ -12,3 +12,4 @@ xcuserdata/
 
 # OMC working state (plans/prd/progress are kept as docs)
 .omc/state/
+.secrets/

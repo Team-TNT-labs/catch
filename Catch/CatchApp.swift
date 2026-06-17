@@ -4,7 +4,7 @@ import SwiftUI
 struct CatchApp: App {
     var body: some Scene {
         WindowGroup {
-            HomeView()
+            RootView()
         }
     }
 }
