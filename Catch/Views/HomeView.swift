@@ -64,6 +64,7 @@ struct HomeView: View {
     @State private var showCamera = false
     @State private var showSettings = false
     @State private var showSearch = false
+    @State private var counts: ProfileCounts?
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -101,6 +102,16 @@ struct HomeView: View {
                             .padding(14)
                     }
                 }
+                if let c = counts {
+                    HStack(spacing: 24) {
+                        countItem("수집", c.collections)
+                        countItem("팔로워", c.followers)
+                        countItem("팔로잉", c.following)
+                    }
+                    .padding(.vertical, 8).padding(.horizontal, 18)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .environment(\.colorScheme, .dark)
+                }
                 Spacer()
             }
 
@@ -117,6 +128,9 @@ struct HomeView: View {
             .padding(.bottom, 40)
         }
         .task { await holder.loadMineIfNeeded() }
+        .task {
+            if let id = auth.profile?.id { counts = await ProfileRepository.shared.counts(id) }
+        }
         .fullScreenCover(isPresented: $showCamera) {
             CameraFlowView(
                 onCatch: { cloud in Task { await holder.add(cloud) } },
@@ -128,6 +142,13 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showSearch) {
             UserSearchView()
+        }
+    }
+
+    private func countItem(_ label: String, _ value: Int) -> some View {
+        VStack(spacing: 1) {
+            Text("\(value)").font(.subheadline.bold()).foregroundStyle(.white)
+            Text(label).font(.caption2).foregroundStyle(.white.opacity(0.6))
         }
     }
 }

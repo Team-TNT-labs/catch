@@ -15,7 +15,7 @@ struct RootView: View {
             case .needsUsername:
                 OnboardingUsernameView().environmentObject(auth)
             case .ready:
-                HomeView().environmentObject(auth)
+                MainTabView().environmentObject(auth)
             }
         }
         .animation(.easeInOut(duration: 0.25), value: auth.state)

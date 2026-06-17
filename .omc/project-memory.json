@@ -123,6 +123,12 @@
   },
   "hotPaths": [
     {
+      "path": "Catch/Views/HomeView.swift",
+      "accessCount": 9,
+      "lastAccessed": 1781670678637,
+      "type": "file"
+    },
+    {
       "path": "Catch/Views/CameraFlowView.swift",
       "accessCount": 6,
       "lastAccessed": 1781664631200,
@@ -132,12 +138,6 @@
       "path": "Catch/Physics/StickerScene.swift",
       "accessCount": 5,
       "lastAccessed": 1781664590718,
-      "type": "file"
-    },
-    {
-      "path": "Catch/Views/HomeView.swift",
-      "accessCount": 5,
-      "lastAccessed": 1781665122932,
       "type": "file"
     },
     {
@@ -153,6 +153,12 @@
       "type": "file"
     },
     {
+      "path": "Catch/Views/Profile/ProfileView.swift",
+      "accessCount": 3,
+      "lastAccessed": 1781670696882,
+      "type": "file"
+    },
+    {
       "path": "Catch/CatchApp.swift",
       "accessCount": 2,
       "lastAccessed": 1781663894129,
@@ -162,6 +168,12 @@
       "path": "Catch/Services/CatchRepository.swift",
       "accessCount": 2,
       "lastAccessed": 1781665040186,
+      "type": "file"
+    },
+    {
+      "path": "Catch/App/RootView.swift",
+      "accessCount": 2,
+      "lastAccessed": 1781670644605,
       "type": "file"
     },
     {
@@ -279,12 +291,6 @@
       "type": "file"
     },
     {
-      "path": "Catch/App/RootView.swift",
-      "accessCount": 1,
-      "lastAccessed": 1781663858169,
-      "type": "file"
-    },
-    {
       "path": "Catch/Views/Auth/SignInView.swift",
       "accessCount": 1,
       "lastAccessed": 1781663871102,
@@ -321,15 +327,51 @@
       "type": "file"
     },
     {
-      "path": "Catch/Views/Profile/ProfileView.swift",
-      "accessCount": 1,
-      "lastAccessed": 1781665089120,
-      "type": "file"
-    },
-    {
       "path": "Catch/Views/Search/UserSearchView.swift",
       "accessCount": 1,
       "lastAccessed": 1781665099480,
+      "type": "file"
+    },
+    {
+      "path": "supabase/migrations/0007_feed_rich.sql",
+      "accessCount": 1,
+      "lastAccessed": 1781670528297,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/FeedRepository.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781670548327,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/ModerationRepository.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781670571893,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/CachedCatchImage.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781670586293,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/Feed/FeedView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781670602387,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/Feed/FeedCard.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781670617091,
+      "type": "file"
+    },
+    {
+      "path": "Catch/App/MainTabView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781670639486,
       "type": "file"
     }
   ],

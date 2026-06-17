@@ -5,10 +5,12 @@ struct ProfileView: View {
     let userId: UUID
     var isSelf: Bool = false
 
+    @Environment(\.dismiss) private var dismiss
     @State private var profile: Profile?
     @State private var counts: ProfileCounts?
     @State private var following = false
     @State private var working = false
+    @State private var confirmReport = false
     private let repo = ProfileRepository.shared
 
     var body: some View {
@@ -20,6 +22,26 @@ struct ProfileView: View {
                 .padding(.top, 8)
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if !isSelf {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button(role: .destructive) { confirmReport = true } label: {
+                            Label("신고", systemImage: "flag")
+                        }
+                        Button(role: .destructive) {
+                            Task { await ModerationRepository.shared.block(userId); dismiss() }
+                        } label: { Label("차단", systemImage: "hand.raised") }
+                    } label: { Image(systemName: "ellipsis") }
+                }
+            }
+        }
+        .alert("신고할까요?", isPresented: $confirmReport) {
+            Button("취소", role: .cancel) {}
+            Button("신고", role: .destructive) {
+                Task { await ModerationRepository.shared.report(userId: userId, reason: "user_report"); dismiss() }
+            }
+        } message: { Text("부적절한 사용자로 신고해요.") }
         .task { await loadMeta() }
     }
 
