@@ -3,17 +3,18 @@ import SwiftUI
 /// 촬영 → 스캔 누끼 → Catch 저장 흐름. 메인에서 왼쪽 스와이프로 슬라이드 인된다.
 /// Catch 성공 시 `onCatch`로 새 Sticker를 전달하고, 닫을 땐 `onClose`를 호출한다.
 struct CameraFlowView: View {
-    var onCatch: (Sticker) -> Void
+    var onCatch: (CloudCatch) -> Void
     var onClose: () -> Void
 
     @StateObject private var camera = CameraController()
     private let remover = BackgroundRemovalService()
-    private let store = StickerStore.shared
+    private let repo = CatchRepository.shared
 
     @State private var captured: UIImage?     // 촬영 원본
     @State private var cutout: UIImage?       // 풀프레임 배경 제거 결과
     @State private var errorMessage: String?
     @State private var flash = false
+    @State private var saving = false
 
     var body: some View {
         ZStack {
@@ -38,6 +39,11 @@ struct CameraFlowView: View {
 
             if flash {
                 Color.white.ignoresSafeArea().transition(.opacity)
+            }
+
+            if saving {
+                Color.black.opacity(0.5).ignoresSafeArea()
+                ProgressView("저장 중…").tint(.white).foregroundStyle(.white)
             }
         }
         .task { await camera.requestAccessAndConfigure() }
@@ -143,12 +149,18 @@ struct CameraFlowView: View {
     }
 
     private func catchSticker(_ image: UIImage) {
-        do {
-            let sticker = try store.save(image: image)
-            onCatch(sticker)
-            onClose()
-        } catch {
-            errorMessage = "저장에 실패했어요."
+        guard !saving else { return }
+        saving = true
+        Task {
+            do {
+                let cloud = try await repo.upload(image: image)
+                saving = false
+                onCatch(cloud)
+                onClose()
+            } catch {
+                saving = false
+                errorMessage = "저장에 실패했어요. 네트워크를 확인해주세요."
+            }
         }
     }
 }

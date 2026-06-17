@@ -5,11 +5,12 @@ import UIKit
 /// - 실루엣 외곽 충돌(SKPhysicsBody(texture:))
 /// - 자이로 중력 / 흔들기 섞임 / 드래그·던지기 / 길게 눌러 삭제
 final class StickerScene: SKScene {
-    private let store = StickerStore.shared
     private let motion = MotionService()
 
-    /// 스티커를 잡았는지(true)/놓았는지(false) 알린다. 호스트가 페이지 스크롤을 잠그는 데 쓴다.
+    /// 스티커를 잡았는지(true)/놓았는지(false) 알린다.
     var onGrabChanged: ((Bool) -> Void)?
+    /// 길게 눌러 삭제가 확정되면 해당 캐치 id를 알린다(호스트가 서버 삭제).
+    var onDeleteCatch: ((UUID) -> Void)?
 
     private let displayMaxDimension: CGFloat = 140
 
@@ -40,8 +41,6 @@ final class StickerScene: SKScene {
             DispatchQueue.main.async { self?.shuffle() }
         }
         motion.start()
-
-        loadSaved()
     }
 
     deinit { motion.stop() }
@@ -68,27 +67,11 @@ final class StickerScene: SKScene {
         physicsBody = body
     }
 
-    // MARK: - Loading / spawning
+    // MARK: - Spawning
 
-    private func loadSaved() {
-        let stickers = store.loadAll()
-        for (index, sticker) in stickers.enumerated() {
-            let delay = Double(index) * 0.08   // 동시 겹침 폭발 방지: 약간씩 시차 투하
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                self?.spawn(sticker: sticker)
-            }
-        }
-    }
-
-    /// 새로 Catch한 스티커를 즉시 추가(저장은 호출 측에서 이미 완료).
-    func addSticker(_ sticker: Sticker) {
-        spawn(sticker: sticker)
-    }
-
-    private func spawn(sticker: Sticker) {
-        guard let displayImage = store.image(for: sticker) else { return }
-        let bodyImage = store.bodyImage(for: sticker) ?? displayImage
-        addStickerNode(displayImage: displayImage, bodyImage: bodyImage, id: sticker.id)
+    /// 캐치 1개를 물리 항아리에 투하한다(이미지는 호스트가 로드해 전달).
+    func addCatch(id: UUID, display: UIImage, body: UIImage) {
+        addStickerNode(displayImage: display, bodyImage: body, id: id)
     }
 
     private func addStickerNode(displayImage: UIImage, bodyImage: UIImage, id: UUID) {
@@ -198,7 +181,7 @@ final class StickerScene: SKScene {
         onGrabChanged?(false)
 
         if let name = node.name, let id = UUID(uuidString: name) {
-            store.delete(id: id)
+            onDeleteCatch?(id)
         }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 

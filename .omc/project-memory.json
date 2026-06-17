@@ -123,6 +123,18 @@
   },
   "hotPaths": [
     {
+      "path": "Catch/Views/CameraFlowView.swift",
+      "accessCount": 6,
+      "lastAccessed": 1781664631200,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Physics/StickerScene.swift",
+      "accessCount": 5,
+      "lastAccessed": 1781664590718,
+      "type": "file"
+    },
+    {
       "path": "project.yml",
       "accessCount": 4,
       "lastAccessed": 1781664135981,
@@ -141,6 +153,12 @@
       "type": "file"
     },
     {
+      "path": "Catch/Views/HomeView.swift",
+      "accessCount": 2,
+      "lastAccessed": 1781664665722,
+      "type": "file"
+    },
+    {
       "path": "Catch/Services/StickerStore.swift",
       "accessCount": 1,
       "lastAccessed": 1781662592899,
@@ -150,18 +168,6 @@
       "path": "Catch/Models/Sticker.swift",
       "accessCount": 1,
       "lastAccessed": 1781662593341,
-      "type": "file"
-    },
-    {
-      "path": "Catch/Views/HomeView.swift",
-      "accessCount": 1,
-      "lastAccessed": 1781662594440,
-      "type": "file"
-    },
-    {
-      "path": "Catch/Physics/StickerScene.swift",
-      "accessCount": 1,
-      "lastAccessed": 1781662594809,
       "type": "file"
     },
     {
@@ -180,12 +186,6 @@
       "path": "Catch/Info.plist",
       "accessCount": 1,
       "lastAccessed": 1781662596322,
-      "type": "file"
-    },
-    {
-      "path": "Catch/Views/CameraFlowView.swift",
-      "accessCount": 1,
-      "lastAccessed": 1781662609089,
       "type": "file"
     },
     {
@@ -288,6 +288,24 @@
       "path": "supabase/migrations/0006_username_minlen.sql",
       "accessCount": 1,
       "lastAccessed": 1781664283690,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Models/CloudCatch.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781664532928,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/CatchRepository.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781664555794,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/SettingsView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781664678671,
       "type": "file"
     }
   ],
