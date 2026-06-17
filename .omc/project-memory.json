@@ -147,6 +147,12 @@
       "type": "file"
     },
     {
+      "path": "Catch/Services/CatchRepository.swift",
+      "accessCount": 4,
+      "lastAccessed": 1781671090030,
+      "type": "file"
+    },
+    {
       "path": "Catch/Views/Auth/OnboardingUsernameView.swift",
       "accessCount": 3,
       "lastAccessed": 1781664297291,
@@ -156,12 +162,6 @@
       "path": "Catch/Views/Profile/ProfileView.swift",
       "accessCount": 3,
       "lastAccessed": 1781670696882,
-      "type": "file"
-    },
-    {
-      "path": "Catch/Services/CatchRepository.swift",
-      "accessCount": 3,
-      "lastAccessed": 1781670839845,
       "type": "file"
     },
     {

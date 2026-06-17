@@ -29,6 +29,9 @@ final class CatchRepository {
     func upload(image: UIImage) async throws -> CloudCatch {
         let uid = try await Supa.client.auth.session.user.id
         let id = UUID()
+        // 스토리지 RLS는 경로의 owner 세그먼트를 auth.uid()::text(소문자)와 대소문자까지 비교하므로 소문자 정규화 필수.
+        let uidStr = uid.uuidString.lowercased()
+        let idStr = id.uuidString.lowercased()
         // 방향 정규화(EXIF/GPS 베이크 제거) → 1024 상한 → 투명 여백 트림
         let normalized = image.orientationNormalized()
             .resized(maxDimension: 1024)
@@ -37,15 +40,15 @@ final class CatchRepository {
         guard let png = normalized.pngData(), let bodyPng = body.pngData() else {
             throw CatchError.encodingFailed
         }
-        let imagePath = "catches/\(uid.uuidString)/\(id.uuidString).png"
-        let bodyPath = "catches/\(uid.uuidString)/\(id.uuidString)_body.png"
+        let imagePath = "catches/\(uidStr)/\(idStr).png"
+        let bodyPath = "catches/\(uidStr)/\(idStr)_body.png"
 
         let opts = FileOptions(contentType: "image/png", upsert: true)
         try await Supa.client.storage.from(bucket).upload(imagePath, data: png, options: opts)
         try await Supa.client.storage.from(bucket).upload(bodyPath, data: bodyPng, options: opts)
 
         let payload = CatchInsert(
-            id: id.uuidString, owner_id: uid.uuidString,
+            id: idStr, owner_id: uidStr,
             image_path: imagePath, body_path: bodyPath,
             width: Int(normalized.size.width), height: Int(normalized.size.height)
         )
