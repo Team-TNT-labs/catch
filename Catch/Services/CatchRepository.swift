@@ -59,13 +59,14 @@ final class CatchRepository {
     }
 
     // MARK: - Load
-    func loadMine() async throws -> [CloudCatch] {
+    func loadMine(folderId: UUID? = nil) async throws -> [CloudCatch] {
         let uid = try await Supa.client.auth.session.user.id
-        return try await Supa.client
-            .from("catches").select()
-            .eq("owner_id", value: uid.uuidString)
-            .order("caught_at", ascending: true)
-            .execute().value
+        let base = Supa.client.from("catches").select().eq("owner_id", value: uid.uuidString)
+        if let folderId {
+            return try await base.eq("folder_id", value: folderId.uuidString)
+                .order("caught_at", ascending: true).execute().value
+        }
+        return try await base.order("caught_at", ascending: true).execute().value
     }
 
     /// 다른 유저의 캐치(RLS가 공개·비차단만 반환).

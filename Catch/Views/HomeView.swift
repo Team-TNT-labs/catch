@@ -25,15 +25,21 @@ final class SceneHolder: ObservableObject {
     func loadMineIfNeeded() async {
         guard !loadedOnce else { return }
         loadedOnce = true
+        await reload(folderId: nil)
+    }
+
+    /// 폴더 필터로 항아리를 다시 채운다(nil = 전체).
+    func reload(folderId: UUID?) async {
         isLoading = true
-        let catches = (try? await repo.loadMine()) ?? []
+        scene.clearAll()
+        byId.removeAll()
+        let catches = (try? await repo.loadMine(folderId: folderId)) ?? []
         isEmpty = catches.isEmpty
         isLoading = false
-        for (index, c) in catches.enumerated() {
+        for c in catches {
             byId[c.id] = c
-            // 약간씩 시차 투하(동시 겹침 폭발 방지)
             try? await Task.sleep(nanoseconds: 80_000_000)
-            await spawn(c, isNew: index == catches.count - 1 ? false : false)
+            await spawn(c, isNew: false)
         }
     }
 
@@ -65,6 +71,9 @@ struct HomeView: View {
     @State private var showSettings = false
     @State private var showSearch = false
     @State private var counts: ProfileCounts?
+    @State private var folders: [Folder] = []
+    @State private var selectedFolder: UUID?
+    @State private var showFolders = false
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -112,6 +121,10 @@ struct HomeView: View {
                     .background(.ultraThinMaterial, in: Capsule())
                     .environment(\.colorScheme, .dark)
                 }
+
+                folderBar
+                    .padding(.top, 6)
+
                 Spacer()
             }
 
@@ -130,6 +143,15 @@ struct HomeView: View {
         .task { await holder.loadMineIfNeeded() }
         .task {
             if let id = auth.profile?.id { counts = await ProfileRepository.shared.counts(id) }
+            folders = await FolderRepository.shared.listMine()
+        }
+        .sheet(isPresented: $showFolders) {
+            FoldersView(onChanged: {
+                Task {
+                    folders = await FolderRepository.shared.listMine()
+                    await holder.reload(folderId: selectedFolder)
+                }
+            })
         }
         .fullScreenCover(isPresented: $showCamera) {
             CameraFlowView(
@@ -142,6 +164,41 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showSearch) {
             UserSearchView()
+        }
+    }
+
+    private var folderBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                chip("전체", selected: selectedFolder == nil) {
+                    selectedFolder = nil
+                    Task { await holder.reload(folderId: nil) }
+                }
+                ForEach(folders) { f in
+                    chip(f.name, selected: selectedFolder == f.id) {
+                        selectedFolder = f.id
+                        Task { await holder.reload(folderId: f.id) }
+                    }
+                }
+                Button { showFolders = true } label: {
+                    Image(systemName: "folder.badge.gearshape")
+                        .font(.footnote.bold())
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.horizontal, 12).frame(height: 30)
+                        .background(.white.opacity(0.1), in: Capsule())
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+    }
+
+    private func chip(_ title: String, selected: Bool, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.footnote.weight(selected ? .bold : .regular))
+                .foregroundStyle(selected ? .black : .white.opacity(0.85))
+                .padding(.horizontal, 14).frame(height: 30)
+                .background(selected ? Color.white : Color.white.opacity(0.1), in: Capsule())
         }
     }
 

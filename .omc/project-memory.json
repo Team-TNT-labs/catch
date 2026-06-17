@@ -124,8 +124,8 @@
   "hotPaths": [
     {
       "path": "Catch/Views/HomeView.swift",
-      "accessCount": 9,
-      "lastAccessed": 1781670678637,
+      "accessCount": 14,
+      "lastAccessed": 1781670922886,
       "type": "file"
     },
     {
@@ -136,8 +136,8 @@
     },
     {
       "path": "Catch/Physics/StickerScene.swift",
-      "accessCount": 5,
-      "lastAccessed": 1781664590718,
+      "accessCount": 6,
+      "lastAccessed": 1781670806562,
       "type": "file"
     },
     {
@@ -159,15 +159,15 @@
       "type": "file"
     },
     {
-      "path": "Catch/CatchApp.swift",
-      "accessCount": 2,
-      "lastAccessed": 1781663894129,
+      "path": "Catch/Services/CatchRepository.swift",
+      "accessCount": 3,
+      "lastAccessed": 1781670839845,
       "type": "file"
     },
     {
-      "path": "Catch/Services/CatchRepository.swift",
+      "path": "Catch/CatchApp.swift",
       "accessCount": 2,
-      "lastAccessed": 1781665040186,
+      "lastAccessed": 1781663894129,
       "type": "file"
     },
     {
@@ -372,6 +372,24 @@
       "path": "Catch/App/MainTabView.swift",
       "accessCount": 1,
       "lastAccessed": 1781670639486,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Models/Folder.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781670811202,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/FolderRepository.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781670820865,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/Folder/FoldersView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781670887982,
       "type": "file"
     }
   ],

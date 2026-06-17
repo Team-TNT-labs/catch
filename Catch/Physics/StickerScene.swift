@@ -74,6 +74,20 @@ final class StickerScene: SKScene {
         addStickerNode(displayImage: display, bodyImage: body, id: id)
     }
 
+    /// 항아리를 비운다(폴더 전환 시).
+    func clearAll() {
+        cancelTimers()
+        for case let node as SKSpriteNode in children where node.physicsBody != nil {
+            node.removeFromParent()
+        }
+        draggedNode = nil
+    }
+
+    private func cancelTimers() {
+        longPressTimer?.invalidate()
+        longPressTimer = nil
+    }
+
     private func addStickerNode(displayImage: UIImage, bodyImage: UIImage, id: UUID) {
         let texture = SKTexture(image: displayImage)
         let node = SKSpriteNode(texture: texture)
