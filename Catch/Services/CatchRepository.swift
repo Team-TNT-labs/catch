@@ -68,6 +68,15 @@ final class CatchRepository {
             .execute().value
     }
 
+    /// 다른 유저의 캐치(RLS가 공개·비차단만 반환).
+    func loadUser(_ userId: UUID) async throws -> [CloudCatch] {
+        try await Supa.client
+            .from("catches").select()
+            .eq("owner_id", value: userId.uuidString)
+            .order("caught_at", ascending: true)
+            .execute().value
+    }
+
     // MARK: - Images (캐시 우선, 없으면 다운로드)
     func image(at path: String) async -> UIImage? {
         let url = cacheURL(path)

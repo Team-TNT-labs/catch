@@ -63,6 +63,7 @@ struct HomeView: View {
     @StateObject private var holder = SceneHolder()
     @State private var showCamera = false
     @State private var showSettings = false
+    @State private var showSearch = false
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -93,6 +94,12 @@ struct HomeView: View {
                             .padding(12)
                     }
                     Spacer()
+                    Button { showSearch = true } label: {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.9))
+                            .padding(14)
+                    }
                 }
                 Spacer()
             }
@@ -118,6 +125,9 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsView().environmentObject(auth)
+        }
+        .sheet(isPresented: $showSearch) {
+            UserSearchView()
         }
     }
 }

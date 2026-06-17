@@ -135,6 +135,12 @@
       "type": "file"
     },
     {
+      "path": "Catch/Views/HomeView.swift",
+      "accessCount": 5,
+      "lastAccessed": 1781665122932,
+      "type": "file"
+    },
+    {
       "path": "project.yml",
       "accessCount": 4,
       "lastAccessed": 1781664135981,
@@ -153,9 +159,9 @@
       "type": "file"
     },
     {
-      "path": "Catch/Views/HomeView.swift",
+      "path": "Catch/Services/CatchRepository.swift",
       "accessCount": 2,
-      "lastAccessed": 1781664665722,
+      "lastAccessed": 1781665040186,
       "type": "file"
     },
     {
@@ -297,15 +303,33 @@
       "type": "file"
     },
     {
-      "path": "Catch/Services/CatchRepository.swift",
-      "accessCount": 1,
-      "lastAccessed": 1781664555794,
-      "type": "file"
-    },
-    {
       "path": "Catch/Views/SettingsView.swift",
       "accessCount": 1,
       "lastAccessed": 1781664678671,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/ProfileRepository.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781665052556,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/JarView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781665076552,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/Profile/ProfileView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781665089120,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/Search/UserSearchView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781665099480,
       "type": "file"
     }
   ],
