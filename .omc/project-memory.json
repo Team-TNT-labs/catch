@@ -144,6 +144,25 @@
       ]
     }
   },
-  "hotPaths": [],
+  "hotPaths": [
+    {
+      "path": "Catch/Views/CameraFlowView.swift",
+      "accessCount": 2,
+      "lastAccessed": 1781775015190,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/CameraController.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781774919778,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/CameraView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781774955756,
+      "type": "file"
+    }
+  ],
   "userDirectives": []
 }

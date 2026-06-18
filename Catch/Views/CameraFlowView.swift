@@ -50,11 +50,11 @@ struct CameraFlowView: View {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(.black)
                 .overlay {
-                    if camera.status == .ready {
-                        CameraPreview(session: camera.session)
-                            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-                            .transition(.opacity)
-                    }
+                    // 프리뷰는 항상 트리에 두고(세션 연결 유지) opacity로만 페이드.
+                    CameraPreview(session: camera.session)
+                        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                        .opacity(camera.status == .ready ? 1 : 0)
+                        .animation(.easeInOut(duration: 0.4), value: camera.status)
                 }
                 .overlay(
                     RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -63,7 +63,6 @@ struct CameraFlowView: View {
                 .padding(.horizontal, 12)
                 .padding(.top, deviceSafeAreaTop)   // 노치/다이나믹아일랜드 아래로
                 .padding(.bottom, 118)
-                .animation(.easeInOut(duration: 0.4), value: camera.status)
 
             // 셔터 + 우측 전/후면 플립
             VStack {
