@@ -14,12 +14,9 @@ struct MainContainerView: View {
         ZStack(alignment: .bottom) {
             Color.black.ignoresSafeArea()
 
-            // 가로 페이저 — jar를 맨 왼쪽(index 0)에 둬 첫 진입이 항상 jar.
+            // 가로 페이저 — jar를 가운데에 둬 camera/profile 양쪽에서 드래그하면 jar로.
             ScrollView(.horizontal) {
                 HStack(spacing: 0) {
-                    pageView(.jar) {
-                        HomeView(holder: holder).environmentObject(auth)
-                    }
                     pageView(.camera) {
                         CameraFlowView(
                             camera: camera,
@@ -32,6 +29,9 @@ struct MainContainerView: View {
                             onClose: { goTo(.jar) }
                         )
                     }
+                    pageView(.jar) {
+                        HomeView(holder: holder).environmentObject(auth)
+                    }
                     pageView(.profile) {
                         ProfilePageView().environmentObject(auth)
                     }
@@ -39,6 +39,7 @@ struct MainContainerView: View {
                 .scrollTargetLayout()
             }
             .scrollTargetBehavior(.paging)
+            .defaultScrollAnchor(.center)   // 첫 진입을 가운데(jar)로
             .scrollPosition(id: $page)
             // jar에선 스와이프 잠금(스티커 드래그 보호). 이동은 세그먼트 탭으로.
             .scrollDisabled(page == .jar || holder.isGrabbing || capturing)

@@ -159,8 +159,8 @@
     },
     {
       "path": "Catch/App/MainContainerView.swift",
-      "accessCount": 7,
-      "lastAccessed": 1781776425503,
+      "accessCount": 8,
+      "lastAccessed": 1781776593851,
       "type": "file"
     },
     {
@@ -170,15 +170,15 @@
       "type": "file"
     },
     {
-      "path": "Catch/Views/HomeView.swift",
-      "accessCount": 2,
-      "lastAccessed": 1781775499200,
+      "path": "Catch/Views/SetlogBar.swift",
+      "accessCount": 3,
+      "lastAccessed": 1781776653172,
       "type": "file"
     },
     {
-      "path": "Catch/Views/SetlogBar.swift",
-      "accessCount": 1,
-      "lastAccessed": 1781776167179,
+      "path": "Catch/Views/HomeView.swift",
+      "accessCount": 2,
+      "lastAccessed": 1781775499200,
       "type": "file"
     }
   ],

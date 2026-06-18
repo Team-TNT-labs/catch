@@ -10,44 +10,61 @@ enum CatchMode: String, CaseIterable {
         case .profile: return "profile"
         }
     }
+
+    var icon: String {
+        switch self {
+        case .camera: return "camera.fill"
+        case .jar: return "archivebox.fill"
+        case .profile: return "person.fill"
+        }
+    }
 }
 
-/// SETLOG 하단 바 — [ camera | jar | profile 세그먼트 ]만.
+/// SETLOG 하단 바 — 아이콘 세그먼트. 탭/드래그로 전환(iOS 26 탭바처럼).
 struct SetlogBottomBar: View {
     @Binding var selection: CatchMode?
 
     @Namespace private var seg
+    @State private var pillWidth: CGFloat = 0
+    private let modes = CatchMode.allCases
 
     var body: some View {
-        segmented
-    }
-
-    private var segmented: some View {
         HStack(spacing: 2) {
-            ForEach(CatchMode.allCases, id: \.self) { m in
-                segment(m)
-            }
+            ForEach(modes, id: \.self) { segment($0) }
         }
         .padding(4)
         .liquidGlass(Capsule())
+        .background(
+            GeometryReader { g in
+                Color.clear.onAppear { pillWidth = g.size.width }
+            }
+        )
+        .contentShape(Capsule())
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { v in
+                    guard pillWidth > 0 else { return }
+                    let i = max(0, min(modes.count - 1,
+                                       Int(v.location.x / (pillWidth / CGFloat(modes.count)))))
+                    let m = modes[i]
+                    if selection != m {
+                        withAnimation(.spring(response: 0.38, dampingFraction: 0.78)) { selection = m }
+                    }
+                }
+        )
     }
 
     private func segment(_ value: CatchMode) -> some View {
         let selected = selection == value
-        return Text(value.label)
-            .font(.system(size: 14, weight: .semibold))
+        return Image(systemName: value.icon)
+            .font(.system(size: 16, weight: .semibold))
             .foregroundStyle(selected ? .white : Theme.muted)
-            .padding(.horizontal, 14)
-            .frame(height: 36)
+            .frame(width: 54, height: 38)
             .background {
                 if selected {
                     Capsule().fill(.white.opacity(0.22))
                         .matchedGeometryEffect(id: "seg", in: seg)
                 }
-            }
-            .contentShape(Capsule())
-            .onTapGesture {
-                withAnimation(.spring(response: 0.38, dampingFraction: 0.78)) { selection = value }
             }
     }
 }
