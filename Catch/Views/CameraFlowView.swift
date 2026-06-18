@@ -1,17 +1,17 @@
 import SwiftUI
 
-/// 촬영 → 스캔 누끼 → Catch 저장 흐름. 메인에서 왼쪽 스와이프로 슬라이드 인된다.
-/// Catch 성공 시 `onCatch`로 새 Sticker를 전달하고, 닫을 땐 `onClose`를 호출한다.
+/// SETLOG 카메라 톤 — 라운드 인셋 프리뷰 + 세로 시계 + 셔터. 촬영 후 스캔 누끼 오버레이.
 struct CameraFlowView: View {
+    @ObservedObject var camera: CameraController
+    @Binding var capturing: Bool
     var onCatch: (CloudCatch) -> Void
     var onClose: () -> Void
 
-    @StateObject private var camera = CameraController()
     private let remover = BackgroundRemovalService()
     private let repo = CatchRepository.shared
 
-    @State private var captured: UIImage?     // 촬영 원본
-    @State private var cutout: UIImage?       // 풀프레임 배경 제거 결과
+    @State private var captured: UIImage?
+    @State private var cutout: UIImage?
     @State private var errorMessage: String?
     @State private var flash = false
     @State private var saving = false
@@ -33,95 +33,96 @@ struct CameraFlowView: View {
                 case .denied: deniedView
                 case .failed: failedView
                 case .ready:  captureView
-                default:      ProgressView().tint(.white)
+                default:      ProgressView().tint(Theme.coral)
                 }
             }
 
-            if flash {
-                Color.white.ignoresSafeArea().transition(.opacity)
-            }
-
+            if flash { Color.white.ignoresSafeArea().transition(.opacity) }
             if saving {
-                Color.black.opacity(0.5).ignoresSafeArea()
-                ProgressView("저장 중…").tint(.white).foregroundStyle(.white)
+                Color.black.opacity(0.55).ignoresSafeArea()
+                ProgressView("catching…").tint(.white).foregroundStyle(.white)
             }
         }
         .task { await camera.requestAccessAndConfigure() }
         .onDisappear { camera.stopSession() }
+        .onChange(of: captured == nil) { _, isNil in capturing = !isNil }
         .alert("안내", isPresented: Binding(
-            get: { errorMessage != nil },
-            set: { if !$0 { errorMessage = nil } }
-        )) {
-            Button("확인", role: .cancel) { errorMessage = nil }
-        } message: {
-            Text(errorMessage ?? "")
-        }
+            get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
+        )) { Button("확인", role: .cancel) {} } message: { Text(errorMessage ?? "") }
     }
 
     private var captureView: some View {
-        ZStack {
-            CameraPreview(session: camera.session).ignoresSafeArea()
+        GeometryReader { geo in
+            ZStack(alignment: .top) {
+                CameraPreview(session: camera.session)
+                    .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                    .padding(.horizontal, 6)
+                    .padding(.bottom, 130)
+                    .padding(.top, 4)
 
-            VStack {
+                // 세로 시계
+                Text(timeString)
+                    .font(.system(size: 40, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .rotationEffect(.degrees(-90))
+                    .fixedSize()
+                    .frame(width: 40)
+                    .position(x: 38, y: geo.size.height * 0.45)
+                    .shadow(color: .black.opacity(0.4), radius: 6)
+
+                // X 닫기
                 HStack {
+                    Spacer()
                     Button { onClose() } label: {
                         Image(systemName: "xmark")
-                            .font(.title2.bold())
+                            .font(.system(size: 16, weight: .bold))
                             .foregroundStyle(.white)
-                            .padding(16)
+                            .frame(width: 36, height: 36)
+                            .background(.ultraThinMaterial, in: Circle())
                     }
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 14)
+
+                // 셔터
+                VStack {
                     Spacer()
+                    Button(action: capture) {
+                        ZStack {
+                            Circle().stroke(.white, lineWidth: 4).frame(width: 76, height: 76)
+                            Circle().fill(.white).frame(width: 62, height: 62)
+                        }
+                    }
+                    .padding(.bottom, 150)
                 }
-                Spacer()
-                Button(action: capture) {
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 76, height: 76)
-                        .overlay(Circle().stroke(.white.opacity(0.5), lineWidth: 4).frame(width: 92, height: 92))
-                }
-                .padding(.bottom, 48)
             }
         }
+        .ignoresSafeArea(edges: .top)
     }
 
-    private var failedView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 44))
-                .foregroundStyle(.white.opacity(0.7))
-            Text("카메라를 시작할 수 없어요")
-                .font(.title3.bold())
-                .foregroundStyle(.white)
-            Button("다시 시도") {
-                Task { await camera.requestAccessAndConfigure() }
-            }
-            .buttonStyle(.borderedProminent)
-            Button("닫기") { onClose() }
-                .foregroundStyle(.white.opacity(0.7))
-        }
-        .padding()
+    private var timeString: String {
+        let f = DateFormatter(); f.dateFormat = "HH:mm"; return f.string(from: Date())
     }
 
     private var deniedView: some View {
         VStack(spacing: 20) {
-            Image(systemName: "camera.metering.none")
-                .font(.system(size: 48))
-                .foregroundStyle(.white.opacity(0.7))
-            Text("카메라 권한이 필요해요")
-                .font(.title3.bold())
-                .foregroundStyle(.white)
-            Text("설정에서 카메라 접근을 켜주세요.")
-                .foregroundStyle(.white.opacity(0.7))
+            Image(systemName: "camera.metering.none").font(.system(size: 48)).foregroundStyle(.white.opacity(0.7))
+            Text("카메라 권한이 필요해요").font(.title3.bold()).foregroundStyle(.white)
             Button("설정 열기") {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
-            }
-            .buttonStyle(.borderedProminent)
-            Button("닫기") { onClose() }
-                .foregroundStyle(.white.opacity(0.7))
-        }
-        .padding()
+                if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+            }.buttonStyle(.borderedProminent).tint(Theme.coral)
+            Button("닫기") { onClose() }.foregroundStyle(.white.opacity(0.7))
+        }.padding()
+    }
+
+    private var failedView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle").font(.system(size: 44)).foregroundStyle(.white.opacity(0.7))
+            Text("카메라를 시작할 수 없어요").font(.title3.bold()).foregroundStyle(.white)
+            Button("다시 시도") { Task { await camera.requestAccessAndConfigure() } }
+                .buttonStyle(.borderedProminent).tint(Theme.coral)
+            Button("닫기") { onClose() }.foregroundStyle(.white.opacity(0.7))
+        }.padding()
     }
 
     private func capture() {
@@ -134,11 +135,9 @@ struct CameraFlowView: View {
                 let cut = try await remover.removeBackground(from: photo)
                 cutout = cut
             } catch BackgroundRemovalError.noSubject {
-                resetToCamera()
-                errorMessage = "피사체를 찾지 못했어요. 다시 찍어볼까요?"
+                resetToCamera(); errorMessage = "피사체를 찾지 못했어요. 다시 찍어볼까요?"
             } catch {
-                resetToCamera()
-                errorMessage = "촬영에 실패했어요. 다시 시도해주세요."
+                resetToCamera(); errorMessage = "촬영에 실패했어요. 다시 시도해주세요."
             }
         }
     }
@@ -156,7 +155,6 @@ struct CameraFlowView: View {
                 let cloud = try await repo.upload(image: image)
                 saving = false
                 onCatch(cloud)
-                onClose()
             } catch {
                 saving = false
                 errorMessage = "저장에 실패했어요. 네트워크를 확인해주세요."

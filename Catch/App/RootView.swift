@@ -15,7 +15,7 @@ struct RootView: View {
             case .needsUsername:
                 OnboardingUsernameView().environmentObject(auth)
             case .ready:
-                MainTabView().environmentObject(auth)
+                MainContainerView().environmentObject(auth)
             }
         }
         .tint(Theme.coral)

@@ -1,7 +1,7 @@
 import SwiftUI
 import SpriteKit
 
-/// 물리 씬 + 클라우드 수집 로딩/삭제를 담당한다.
+/// 물리 씬 + 클라우드 수집 로딩/삭제.
 @MainActor
 final class SceneHolder: ObservableObject {
     let scene: StickerScene
@@ -28,7 +28,6 @@ final class SceneHolder: ObservableObject {
         await reload(folderId: nil)
     }
 
-    /// 폴더 필터로 항아리를 다시 채운다(nil = 전체).
     func reload(folderId: UUID?) async {
         isLoading = true
         scene.clearAll()
@@ -39,17 +38,17 @@ final class SceneHolder: ObservableObject {
         for c in catches {
             byId[c.id] = c
             try? await Task.sleep(nanoseconds: 80_000_000)
-            await spawn(c, isNew: false)
+            await spawn(c)
         }
     }
 
     func add(_ c: CloudCatch) async {
         byId[c.id] = c
         isEmpty = false
-        await spawn(c, isNew: true)
+        await spawn(c)
     }
 
-    private func spawn(_ c: CloudCatch, isNew: Bool) async {
+    private func spawn(_ c: CloudCatch) async {
         guard let display = await repo.displayImage(for: c) else { return }
         let body = await repo.bodyImage(for: c) ?? display
         scene.addCatch(id: c.id, display: display, body: body)
@@ -63,20 +62,18 @@ final class SceneHolder: ObservableObject {
     }
 }
 
-/// 홈 = 내 수집(물리 항아리). 우측 하단 버튼으로 카메라.
+/// 메인(jar) — 물리 항아리 + 카운트 + 폴더 칩. 상/하단 바는 컨테이너가 그린다.
 struct HomeView: View {
     @EnvironmentObject private var auth: AuthService
-    @StateObject private var holder = SceneHolder()
-    @State private var showCamera = false
-    @State private var showSettings = false
-    @State private var showSearch = false
+    @ObservedObject var holder: SceneHolder
+
     @State private var counts: ProfileCounts?
     @State private var folders: [Folder] = []
     @State private var selectedFolder: UUID?
     @State private var showFolders = false
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        ZStack(alignment: .top) {
             SpriteView(scene: holder.scene, options: [.ignoresSiblingOrder])
                 .ignoresSafeArea()
 
@@ -86,30 +83,14 @@ struct HomeView: View {
             } else if holder.isEmpty {
                 VStack(spacing: 8) {
                     Text("🫙").font(.system(size: 52))
-                    Text("무언가를 찍어 모아보세요!")
-                        .font(.headline).foregroundStyle(Theme.ink.opacity(0.6))
+                    Text("아래 카메라로 무언가 찍어보세요")
+                        .font(.subheadline).foregroundStyle(Theme.muted)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .allowsHitTesting(false)
             }
 
-            // 좌측 상단 프로필/설정
-            VStack {
-                HStack {
-                    Button { showSettings = true } label: {
-                        Image(systemName: "person.crop.circle.fill")
-                            .font(.system(size: 30))
-                            .foregroundStyle(Theme.ink.opacity(0.8))
-                            .padding(12)
-                    }
-                    Spacer()
-                    Button { showSearch = true } label: {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundStyle(Theme.ink.opacity(0.8))
-                            .padding(14)
-                    }
-                }
+            VStack(spacing: 10) {
                 if let c = counts {
                     HStack(spacing: 22) {
                         countItem("collected", c.collections)
@@ -119,23 +100,12 @@ struct HomeView: View {
                     .padding(.vertical, 9).padding(.horizontal, 20)
                     .background(Theme.surface, in: Capsule())
                 }
-
                 folderBar
-                    .padding(.top, 6)
-
-                Spacer()
             }
-
-            // 우측 하단 카메라
-            Button { showCamera = true } label: {
-                Image(systemName: "camera.fill")
-            }
-            .buttonStyle(CuteIconButtonStyle(bg: Theme.lime, fg: .black, size: 62))
-            .padding(.trailing, 20)
-            .padding(.bottom, 40)
+            .padding(.top, 64)
         }
-        .task { await holder.loadMineIfNeeded() }
         .task {
+            await holder.loadMineIfNeeded()
             if let id = auth.profile?.id { counts = await ProfileRepository.shared.counts(id) }
             folders = await FolderRepository.shared.listMine()
         }
@@ -147,24 +117,12 @@ struct HomeView: View {
                 }
             })
         }
-        .fullScreenCover(isPresented: $showCamera) {
-            CameraFlowView(
-                onCatch: { cloud in Task { await holder.add(cloud) } },
-                onClose: { showCamera = false }
-            )
-        }
-        .sheet(isPresented: $showSettings) {
-            SettingsView().environmentObject(auth)
-        }
-        .sheet(isPresented: $showSearch) {
-            UserSearchView()
-        }
     }
 
     private var folderBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                chip("전체", selected: selectedFolder == nil) {
+                chip("all", selected: selectedFolder == nil) {
                     selectedFolder = nil
                     Task { await holder.reload(folderId: nil) }
                 }
@@ -176,8 +134,7 @@ struct HomeView: View {
                 }
                 Button { showFolders = true } label: {
                     Image(systemName: "folder.badge.gearshape")
-                        .font(.footnote.bold())
-                        .foregroundStyle(Theme.muted)
+                        .font(.footnote.bold()).foregroundStyle(Theme.muted)
                         .padding(.horizontal, 14).frame(height: 32)
                         .background(Theme.surface, in: Capsule())
                 }

@@ -124,8 +124,8 @@
   "hotPaths": [
     {
       "path": "Catch/Views/HomeView.swift",
-      "accessCount": 24,
-      "lastAccessed": 1781756501911,
+      "accessCount": 25,
+      "lastAccessed": 1781757200296,
       "type": "file"
     },
     {
@@ -136,8 +136,8 @@
     },
     {
       "path": "Catch/Views/CameraFlowView.swift",
-      "accessCount": 6,
-      "lastAccessed": 1781664631200,
+      "accessCount": 7,
+      "lastAccessed": 1781757169943,
       "type": "file"
     },
     {
@@ -159,6 +159,12 @@
       "type": "file"
     },
     {
+      "path": "Catch/App/RootView.swift",
+      "accessCount": 5,
+      "lastAccessed": 1781757245602,
+      "type": "file"
+    },
+    {
       "path": "project.yml",
       "accessCount": 4,
       "lastAccessed": 1781664135981,
@@ -168,12 +174,6 @@
       "path": "Catch/Services/CatchRepository.swift",
       "accessCount": 4,
       "lastAccessed": 1781671090030,
-      "type": "file"
-    },
-    {
-      "path": "Catch/App/RootView.swift",
-      "accessCount": 4,
-      "lastAccessed": 1781756336723,
       "type": "file"
     },
     {
@@ -192,6 +192,12 @@
       "path": "Catch/Views/Feed/FeedView.swift",
       "accessCount": 4,
       "lastAccessed": 1781756543599,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/CameraController.swift",
+      "accessCount": 4,
+      "lastAccessed": 1781757124358,
       "type": "file"
     },
     {
@@ -252,12 +258,6 @@
       "path": "Catch/Utils/ImageUtils.swift",
       "accessCount": 1,
       "lastAccessed": 1781662610460,
-      "type": "file"
-    },
-    {
-      "path": "Catch/Services/CameraController.swift",
-      "accessCount": 1,
-      "lastAccessed": 1781662611038,
       "type": "file"
     },
     {
@@ -396,6 +396,18 @@
       "path": "Catch/Views/Folder/FoldersView.swift",
       "accessCount": 1,
       "lastAccessed": 1781670887982,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/SetlogBar.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781757102387,
+      "type": "file"
+    },
+    {
+      "path": "Catch/App/MainContainerView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1781757239756,
       "type": "file"
     }
   ],

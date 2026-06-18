@@ -10,10 +10,34 @@ final class CameraController: NSObject, ObservableObject {
 
     @Published var status: Status = .unknown
 
+    @Published var position: AVCaptureDevice.Position = .back
+
     let session = AVCaptureSession()
     private let photoOutput = AVCapturePhotoOutput()
     private let sessionQueue = DispatchQueue(label: "catch.camera.session")
     private var captureContinuation: CheckedContinuation<UIImage, Error>?
+
+    /// 전/후면 전환.
+    func flip() async {
+        position = position == .back ? .front : .back
+        await reconfigureInput()
+    }
+
+    private func reconfigureInput() async {
+        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            sessionQueue.async {
+                self.session.beginConfiguration()
+                for input in self.session.inputs { self.session.removeInput(input) }
+                if let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: self.position),
+                   let input = try? AVCaptureDeviceInput(device: device),
+                   self.session.canAddInput(input) {
+                    self.session.addInput(input)
+                }
+                self.session.commitConfiguration()
+                cont.resume()
+            }
+        }
+    }
 
     /// 권한 상태에 따라 분기 후 세션 구성.
     func requestAccessAndConfigure() async {
@@ -47,7 +71,7 @@ final class CameraController: NSObject, ObservableObject {
                 for input in self.session.inputs { self.session.removeInput(input) }
                 for output in self.session.outputs { self.session.removeOutput(output) }
 
-                guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
+                guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: self.position),
                       let input = try? AVCaptureDeviceInput(device: device),
                       self.session.canAddInput(input) else {
                     self.session.commitConfiguration()
