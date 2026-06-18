@@ -56,6 +56,7 @@ struct CameraFlowView: View {
                         .strokeBorder(Theme.lime, lineWidth: 2)
                 )
                 .padding(.horizontal, 12)
+                .padding(.top, deviceSafeAreaTop)   // 노치/다이나믹아일랜드 아래로
                 .padding(.bottom, 118)
 
             // X 닫기
@@ -70,7 +71,7 @@ struct CameraFlowView: View {
                 }
             }
             .padding(.horizontal, 26)
-            .padding(.top, 12)
+            .padding(.top, deviceSafeAreaTop + 8)
 
             // 셔터 + 우측 전/후면 플립
             VStack {
