@@ -1,17 +1,29 @@
 import SwiftUI
 
-enum CatchMode: String { case camera, jar }
+enum CatchMode: String, CaseIterable {
+    case camera, jar, friends
 
-/// SETLOG 하단 바 — [둥근버튼] [ camera | jar 세그먼트 ] [둥근버튼]
+    var label: String {
+        switch self {
+        case .camera: return "camera"
+        case .jar: return "jar"
+        case .friends: return "friends"
+        }
+    }
+}
+
+/// SETLOG 하단 바 — [둥근버튼] [ camera | jar | friends 세그먼트 ] [둥근버튼]
 struct SetlogBottomBar: View {
     @Binding var mode: CatchMode
-    var leftIcon: String = "person.fill"
+    var leftIcon: String = "gearshape.fill"
     var rightIcon: String
     var onLeft: () -> Void
     var onRight: () -> Void
 
+    @Namespace private var seg
+
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             RoundBarButton(icon: leftIcon, action: onLeft)
             segmented
             RoundBarButton(icon: rightIcon, action: onRight)
@@ -20,26 +32,30 @@ struct SetlogBottomBar: View {
 
     private var segmented: some View {
         HStack(spacing: 2) {
-            segment("camera", .camera)
-            segment("jar", .jar)
+            ForEach(CatchMode.allCases, id: \.self) { m in
+                segment(m)
+            }
         }
         .padding(4)
         .liquidGlass(Capsule())
     }
 
-    private func segment(_ title: String, _ value: CatchMode) -> some View {
+    private func segment(_ value: CatchMode) -> some View {
         let selected = mode == value
-        return Text(title)
-            .font(.system(size: 16, weight: .semibold))
+        return Text(value.label)
+            .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(selected ? .white : Theme.muted)
-            .padding(.horizontal, 20)
-            .frame(height: 38)
+            .padding(.horizontal, 14)
+            .frame(height: 36)
             .background {
-                if selected { Capsule().fill(.white.opacity(0.22)) }
+                if selected {
+                    Capsule().fill(.white.opacity(0.22))
+                        .matchedGeometryEffect(id: "seg", in: seg)
+                }
             }
             .contentShape(Capsule())
             .onTapGesture {
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.72)) { mode = value }
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.78)) { mode = value }
             }
     }
 }
