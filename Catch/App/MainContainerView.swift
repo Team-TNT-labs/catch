@@ -58,12 +58,9 @@ struct MainContainerView: View {
             if !capturing {
                 SetlogBottomBar(
                     mode: $mode,
-                    rightIcon: mode == .camera ? "arrow.triangle.2.circlepath" : "magnifyingglass",
+                    rightIcon: "magnifyingglass",
                     onLeft: { showSettings = true },
-                    onRight: {
-                        if mode == .camera { Task { await camera.flip() } }
-                        else { showSearch = true }
-                    }
+                    onRight: { showSearch = true }
                 )
                 .padding(.bottom, 6)
                 .transition(.move(edge: .bottom).combined(with: .opacity))

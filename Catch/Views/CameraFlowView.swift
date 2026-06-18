@@ -82,13 +82,28 @@ struct CameraFlowView: View {
                 .padding(.horizontal, 18)
                 .padding(.top, 14)
 
-                // 셔터
+                // 셔터 + 우측 전/후면 플립
                 VStack {
                     Spacer()
-                    Button(action: capture) {
-                        ZStack {
-                            Circle().stroke(.white, lineWidth: 4).frame(width: 76, height: 76)
-                            Circle().fill(.white).frame(width: 62, height: 62)
+                    ZStack {
+                        Button(action: capture) {
+                            ZStack {
+                                Circle().stroke(.white, lineWidth: 4).frame(width: 76, height: 76)
+                                Circle().fill(.white).frame(width: 62, height: 62)
+                            }
+                        }
+                        HStack {
+                            Spacer()
+                            Button {
+                                Task { await camera.flip() }
+                            } label: {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 52, height: 52)
+                                    .liquidGlass(Circle(), interactive: true)
+                            }
+                            .padding(.trailing, 44)
                         }
                     }
                     .padding(.bottom, 150)
