@@ -29,15 +29,11 @@ struct CameraFlowView: View {
                 )
                 .transition(.opacity)
             } else {
-                Group {
-                    switch camera.status {
-                    case .denied: deniedView
-                    case .failed: failedView
-                    case .ready:  captureView.transition(.opacity)
-                    default:      Color.black   // 미시작/설정중 → 검정
-                    }
+                switch camera.status {
+                case .denied: deniedView
+                case .failed: failedView
+                default:      captureView   // UI는 즉시 표시, 라이브 영상만 페이드
                 }
-                .animation(.easeInOut(duration: 0.35), value: camera.status)
             }
 
             if flash { Color.white.ignoresSafeArea().transition(.opacity) }
@@ -50,9 +46,16 @@ struct CameraFlowView: View {
 
     private var captureView: some View {
         ZStack(alignment: .top) {
-            // 프리뷰 — 안전영역 안(바깥은 검정) + 좌우 여백 + 라임 테두리
-            CameraPreview(session: camera.session)
-                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            // 프리뷰 프레임 — 즉시 표시(검정 + 라임 테두리). 라이브 영상만 준비되면 페이드 인.
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(.black)
+                .overlay {
+                    if camera.status == .ready {
+                        CameraPreview(session: camera.session)
+                            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                            .transition(.opacity)
+                    }
+                }
                 .overlay(
                     RoundedRectangle(cornerRadius: 28, style: .continuous)
                         .strokeBorder(Theme.lime, lineWidth: 2)
@@ -60,6 +63,7 @@ struct CameraFlowView: View {
                 .padding(.horizontal, 12)
                 .padding(.top, deviceSafeAreaTop)   // 노치/다이나믹아일랜드 아래로
                 .padding(.bottom, 118)
+                .animation(.easeInOut(duration: 0.4), value: camera.status)
 
             // 셔터 + 우측 전/후면 플립
             VStack {
@@ -71,6 +75,8 @@ struct CameraFlowView: View {
                             Circle().fill(.white).frame(width: 62, height: 62)
                         }
                     }
+                    .disabled(camera.status != .ready)
+                    .opacity(camera.status == .ready ? 1 : 0.5)
                     HStack {
                         Spacer()
                         Button {
