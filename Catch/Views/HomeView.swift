@@ -100,6 +100,8 @@ struct HomeView: View {
             .padding(.top, deviceSafeAreaTop + 4)
         }
         .task {
+            // 하단 커스텀 툴바(가운데 알약) 충돌 바디 설정 — 스티커가 바에 안 가려지게.
+            holder.scene.toolbarBarrier = (width: 226, height: 72, bottomMargin: deviceSafeAreaBottom + 6)
             await holder.loadMineIfNeeded()
             folders = await FolderRepository.shared.listMine()
         }

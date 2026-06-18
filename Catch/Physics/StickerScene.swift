@@ -15,6 +15,13 @@ final class StickerScene: SKScene {
     private let displayMaxDimension: CGFloat = 140
     static let rimColor = UIColor(hex: 0xE3FB85)   // 테마 라임
 
+    /// 하단 툴바(가운데 알약) 충돌 바디 — 스티커가 바에 가려지지 않게 부딪힘.
+    /// (width, height, bottomMargin) — 씬 좌표 기준, 가로 중앙 정렬.
+    var toolbarBarrier: (width: CGFloat, height: CGFloat, bottomMargin: CGFloat)? {
+        didSet { rebuildToolbarBarrier() }
+    }
+    private var barrierNode: SKNode?
+
     // 드래그 상태
     private var draggedNode: SKSpriteNode?
     private var dragStartPoint: CGPoint = .zero
@@ -53,6 +60,21 @@ final class StickerScene: SKScene {
         super.didChangeSize(oldSize)
         rebuildBackground()
         rebuildWalls()
+        rebuildToolbarBarrier()
+    }
+
+    private func rebuildToolbarBarrier() {
+        barrierNode?.removeFromParent()
+        barrierNode = nil
+        guard let b = toolbarBarrier, size.width > 1, size.height > 1 else { return }
+        let node = SKNode()
+        node.position = CGPoint(x: size.width / 2, y: b.bottomMargin + b.height / 2)
+        let body = SKPhysicsBody(rectangleOf: CGSize(width: b.width, height: b.height))
+        body.isDynamic = false
+        body.friction = 0.4
+        node.physicsBody = body
+        addChild(node)
+        barrierNode = node
     }
 
     private func rebuildBackground() {

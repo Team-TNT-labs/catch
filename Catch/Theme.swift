@@ -39,6 +39,13 @@ var deviceSafeAreaTop: CGFloat {
         .keyWindow?.safeAreaInsets.top ?? 47
 }
 
+/// 키윈도우 기준 하단 안전영역 inset(홈 인디케이터).
+var deviceSafeAreaBottom: CGFloat {
+    UIApplication.shared.connectedScenes
+        .compactMap { $0 as? UIWindowScene }.first?
+        .keyWindow?.safeAreaInsets.bottom ?? 34
+}
+
 extension View {
     /// Liquid Glass (iOS 26+) — 하위 버전은 ultraThinMaterial 폴백.
     @ViewBuilder
