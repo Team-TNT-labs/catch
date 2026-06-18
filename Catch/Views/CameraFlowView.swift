@@ -43,8 +43,6 @@ struct CameraFlowView: View {
                 ProgressView("catching…").tint(.white).foregroundStyle(.white)
             }
         }
-        .task { await camera.requestAccessAndConfigure() }
-        .onDisappear { camera.stopSession() }
         .onChange(of: captured == nil) { _, isNil in capturing = !isNil }
         .alert("안내", isPresented: Binding(
             get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }

@@ -32,6 +32,18 @@ extension Font {
     }
 }
 
+extension View {
+    /// Liquid Glass (iOS 26+) — 하위 버전은 ultraThinMaterial 폴백.
+    @ViewBuilder
+    func liquidGlass<S: Shape>(_ shape: S, interactive: Bool = false) -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(interactive ? .regular.interactive() : .regular, in: shape)
+        } else {
+            self.background(.ultraThinMaterial, in: shape)
+        }
+    }
+}
+
 extension Color {
     init(hex: UInt, alpha: Double = 1) {
         self.init(.sRGB,

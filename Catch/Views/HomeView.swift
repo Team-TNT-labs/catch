@@ -9,6 +9,7 @@ final class SceneHolder: ObservableObject {
 
     @Published var isLoading = true
     @Published var isEmpty = false
+    @Published var isGrabbing = false   // 스티커 드래그 중 → 페이지 스와이프 잠금
 
     private var byId: [UUID: CloudCatch] = [:]
     private var loadedOnce = false
@@ -19,6 +20,9 @@ final class SceneHolder: ObservableObject {
         self.scene = scene
         scene.onDeleteCatch = { [weak self] id in
             Task { await self?.remove(id) }
+        }
+        scene.onGrabChanged = { [weak self] grabbing in
+            self?.isGrabbing = grabbing
         }
     }
 

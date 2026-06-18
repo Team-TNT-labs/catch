@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// SETLOG식 메인 — camera/jar 모드 전환 + 상/하단 바.
+/// SETLOG식 메인 — camera/jar 가로 스와이프 페이저 + Liquid Glass 바.
 struct MainContainerView: View {
     @EnvironmentObject private var auth: AuthService
     @StateObject private var holder = SceneHolder()
@@ -16,24 +16,36 @@ struct MainContainerView: View {
         ZStack(alignment: .bottom) {
             Color.black.ignoresSafeArea()
 
-            // jar (항상 마운트 — 상태 유지)
-            HomeView(holder: holder)
-                .environmentObject(auth)
-                .opacity(mode == .jar ? 1 : 0)
-                .allowsHitTesting(mode == .jar)
+            // 가로 스와이프 페이저: [camera | jar]
+            ScrollView(.horizontal) {
+                HStack(spacing: 0) {
+                    CameraFlowView(
+                        camera: camera,
+                        capturing: $capturing,
+                        onCatch: { c in
+                            Task { await holder.add(c) }
+                            withAnimation(.easeInOut(duration: 0.3)) { mode = .jar }
+                        },
+                        onClose: { withAnimation(.easeInOut(duration: 0.3)) { mode = .jar } }
+                    )
+                    .containerRelativeFrame(.horizontal)
+                    .id(CatchMode.camera)
 
-            // camera (카메라 모드일 때만 — 세션 라이프사이클)
-            if mode == .camera {
-                CameraFlowView(
-                    camera: camera,
-                    capturing: $capturing,
-                    onCatch: { c in
-                        Task { await holder.add(c) }
-                        withAnimation(.easeInOut(duration: 0.25)) { mode = .jar }
-                    },
-                    onClose: { withAnimation(.easeInOut(duration: 0.25)) { mode = .jar } }
-                )
-                .transition(.opacity)
+                    HomeView(holder: holder)
+                        .environmentObject(auth)
+                        .containerRelativeFrame(.horizontal)
+                        .id(CatchMode.jar)
+                }
+                .scrollTargetLayout()
+            }
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: Binding(get: { mode }, set: { if let v = $0 { mode = v } }))
+            .scrollDisabled(holder.isGrabbing || capturing)
+            .scrollIndicators(.hidden)
+            .ignoresSafeArea()
+            .onChange(of: mode) { _, m in
+                if m == .camera { Task { await camera.requestAccessAndConfigure() } }
+                else { camera.stopSession() }
             }
 
             // 상단 바 (jar 모드)
@@ -41,7 +53,7 @@ struct MainContainerView: View {
                 VStack { topBar; Spacer() }
             }
 
-            // 하단 SETLOG 바
+            // 하단 Liquid Glass 바
             if !capturing {
                 SetlogBottomBar(
                     mode: $mode,

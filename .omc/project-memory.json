@@ -124,8 +124,8 @@
   "hotPaths": [
     {
       "path": "Catch/Views/HomeView.swift",
-      "accessCount": 25,
-      "lastAccessed": 1781757200296,
+      "accessCount": 26,
+      "lastAccessed": 1781764184232,
       "type": "file"
     },
     {
@@ -136,8 +136,8 @@
     },
     {
       "path": "Catch/Views/CameraFlowView.swift",
-      "accessCount": 7,
-      "lastAccessed": 1781757169943,
+      "accessCount": 8,
+      "lastAccessed": 1781764195258,
       "type": "file"
     },
     {
@@ -165,6 +165,12 @@
       "type": "file"
     },
     {
+      "path": "Catch/Theme.swift",
+      "accessCount": 5,
+      "lastAccessed": 1781764155401,
+      "type": "file"
+    },
+    {
       "path": "project.yml",
       "accessCount": 4,
       "lastAccessed": 1781664135981,
@@ -174,12 +180,6 @@
       "path": "Catch/Services/CatchRepository.swift",
       "accessCount": 4,
       "lastAccessed": 1781671090030,
-      "type": "file"
-    },
-    {
-      "path": "Catch/Theme.swift",
-      "accessCount": 4,
-      "lastAccessed": 1781756425944,
       "type": "file"
     },
     {
@@ -210,6 +210,18 @@
       "path": "Catch/Views/JarView.swift",
       "accessCount": 2,
       "lastAccessed": 1781671627147,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/SetlogBar.swift",
+      "accessCount": 2,
+      "lastAccessed": 1781764170323,
+      "type": "file"
+    },
+    {
+      "path": "Catch/App/MainContainerView.swift",
+      "accessCount": 2,
+      "lastAccessed": 1781764237437,
       "type": "file"
     },
     {
@@ -396,18 +408,6 @@
       "path": "Catch/Views/Folder/FoldersView.swift",
       "accessCount": 1,
       "lastAccessed": 1781670887982,
-      "type": "file"
-    },
-    {
-      "path": "Catch/Views/SetlogBar.swift",
-      "accessCount": 1,
-      "lastAccessed": 1781757102387,
-      "type": "file"
-    },
-    {
-      "path": "Catch/App/MainContainerView.swift",
-      "accessCount": 1,
-      "lastAccessed": 1781757239756,
       "type": "file"
     }
   ],

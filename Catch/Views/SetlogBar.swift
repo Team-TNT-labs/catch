@@ -24,8 +24,7 @@ struct SetlogBottomBar: View {
             segment("jar", .jar)
         }
         .padding(4)
-        .background(Capsule().fill(Color(white: 0.11)))
-        .overlay(Capsule().stroke(Color.white.opacity(0.06), lineWidth: 1))
+        .liquidGlass(Capsule())
     }
 
     private func segment(_ title: String, _ value: CatchMode) -> some View {
@@ -36,7 +35,7 @@ struct SetlogBottomBar: View {
             .padding(.horizontal, 20)
             .frame(height: 38)
             .background {
-                if selected { Capsule().fill(Color(white: 0.24)) }
+                if selected { Capsule().fill(.white.opacity(0.22)) }
             }
             .contentShape(Capsule())
             .onTapGesture {
@@ -55,8 +54,7 @@ struct RoundBarButton: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 46, height: 46)
-                .background(Circle().fill(Color(white: 0.11)))
-                .overlay(Circle().stroke(Color.white.opacity(0.06), lineWidth: 1))
+                .liquidGlass(Circle(), interactive: true)
         }
     }
 }
