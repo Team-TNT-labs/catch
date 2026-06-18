@@ -130,14 +130,14 @@
     },
     {
       "path": "Catch/Views/CameraFlowView.swift",
-      "accessCount": 23,
-      "lastAccessed": 1781774478600,
+      "accessCount": 24,
+      "lastAccessed": 1781774573403,
       "type": "file"
     },
     {
       "path": "Catch/App/MainContainerView.swift",
-      "accessCount": 13,
-      "lastAccessed": 1781774377108,
+      "accessCount": 14,
+      "lastAccessed": 1781774565532,
       "type": "file"
     },
     {
@@ -156,6 +156,12 @@
       "path": "Catch/App/RootView.swift",
       "accessCount": 7,
       "lastAccessed": 1781772991664,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/CameraController.swift",
+      "accessCount": 7,
+      "lastAccessed": 1781774557671,
       "type": "file"
     },
     {
@@ -210,12 +216,6 @@
       "path": "Catch/Views/Feed/FeedView.swift",
       "accessCount": 4,
       "lastAccessed": 1781756543599,
-      "type": "file"
-    },
-    {
-      "path": "Catch/Services/CameraController.swift",
-      "accessCount": 4,
-      "lastAccessed": 1781757124358,
       "type": "file"
     },
     {

@@ -51,7 +51,7 @@ struct MainContainerView: View {
                         if mode == .camera { await camera.requestAccessAndConfigure() }
                     }
                 } else {
-                    camera.stopSession()
+                    camera.deactivate()   // 메인에선 카메라 끄고 상태 리셋
                 }
             }
 

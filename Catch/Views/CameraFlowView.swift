@@ -29,12 +29,15 @@ struct CameraFlowView: View {
                 )
                 .transition(.opacity)
             } else {
-                switch camera.status {
-                case .denied: deniedView
-                case .failed: failedView
-                case .ready:  captureView
-                default:      Color.black   // 미시작/설정중 → 로딩 애니메이션 없이 검정
+                Group {
+                    switch camera.status {
+                    case .denied: deniedView
+                    case .failed: failedView
+                    case .ready:  captureView.transition(.opacity)
+                    default:      Color.black   // 미시작/설정중 → 검정
+                    }
                 }
+                .animation(.easeInOut(duration: 0.35), value: camera.status)
             }
 
             if flash { Color.white.ignoresSafeArea().transition(.opacity) }

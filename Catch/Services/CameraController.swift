@@ -108,6 +108,12 @@ final class CameraController: NSObject, ObservableObject {
         }
     }
 
+    /// 메인 뷰로 나갈 때 — 세션 정지 + 상태 리셋(재진입 시 매번 검정→페이드).
+    func deactivate() {
+        stopSession()
+        status = .unknown
+    }
+
     func capturePhoto() async throws -> UIImage {
         // 직전 촬영이 아직 진행 중이면 중복 호출을 거부(continuation 덮어쓰기/누수 방지).
         guard captureContinuation == nil else { throw CameraError.captureFailed }
