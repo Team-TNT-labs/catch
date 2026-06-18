@@ -45,13 +45,9 @@ struct MainContainerView: View {
             .ignoresSafeArea()
             .onChange(of: mode) { _, m in
                 if m == .camera {
-                    // 전환 애니메이션이 끝난 뒤 시작 — 검정 먼저 뜨고 로딩(첫 진입 렉 방지)
-                    Task {
-                        try? await Task.sleep(nanoseconds: 280_000_000)
-                        if mode == .camera { await camera.requestAccessAndConfigure() }
-                    }
+                    Task { await camera.requestAccessAndConfigure() }
                 } else {
-                    camera.deactivate()   // 메인에선 카메라 끄고 상태 리셋
+                    camera.stopSession()   // 메인에선 세션만 정지(상태 유지)
                 }
             }
 
