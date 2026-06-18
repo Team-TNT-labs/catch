@@ -77,7 +77,7 @@ struct CameraFlowView: View {
                     HStack {
                         Spacer()
                         Button {
-                            Task { await camera.flip() }
+                            camera.flip()
                         } label: {
                             Image(systemName: "arrow.triangle.2.circlepath")
                                 .font(.system(size: 20, weight: .semibold))
@@ -108,7 +108,7 @@ struct CameraFlowView: View {
         VStack(spacing: 20) {
             Image(systemName: "exclamationmark.triangle").font(.system(size: 44)).foregroundStyle(.white.opacity(0.7))
             Text("카메라를 시작할 수 없어요").font(.title3.bold()).foregroundStyle(.white)
-            Button("다시 시도") { camera.start() }
+            Button("다시 시도") { camera.prepare() }
                 .buttonStyle(.borderedProminent).tint(Theme.coral)
             Button("닫기") { onClose() }.foregroundStyle(.white.opacity(0.7))
         }.padding()
@@ -126,7 +126,7 @@ struct CameraFlowView: View {
             } catch BackgroundRemovalError.noSubject {
                 resetToCamera(); errorMessage = "피사체를 찾지 못했어요. 다시 찍어볼까요?"
             } catch {
-                resetToCamera(); errorMessage = "촬영에 실패했어요. 다시 시도해주세요."
+                resetToCamera(); errorMessage = "촬영 실패: \(error.localizedDescription)"
             }
         }
     }

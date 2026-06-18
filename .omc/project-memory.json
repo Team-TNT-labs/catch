@@ -147,14 +147,14 @@
   "hotPaths": [
     {
       "path": "Catch/Services/CameraController.swift",
-      "accessCount": 24,
-      "lastAccessed": 1781779739245,
+      "accessCount": 26,
+      "lastAccessed": 1781780493958,
       "type": "file"
     },
     {
       "path": "Catch/Views/CameraFlowView.swift",
-      "accessCount": 22,
-      "lastAccessed": 1781779889179,
+      "accessCount": 26,
+      "lastAccessed": 1781780519432,
       "type": "file"
     },
     {
@@ -165,8 +165,8 @@
     },
     {
       "path": "Catch/App/MainContainerView.swift",
-      "accessCount": 14,
-      "lastAccessed": 1781779120613,
+      "accessCount": 15,
+      "lastAccessed": 1781780503636,
       "type": "file"
     },
     {
