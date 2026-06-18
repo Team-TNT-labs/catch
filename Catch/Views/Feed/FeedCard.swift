@@ -24,12 +24,11 @@ struct FeedCard: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 300)
                     .padding(20)
-                    .background(Theme.bgBottom.opacity(0.5), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .background(Color.black.opacity(0.35), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 footer
             }
             .padding(16)
-            .background(.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .shadow(color: Theme.ink.opacity(0.08), radius: 12, y: 6)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
             .padding(.horizontal, 16)
         }
     }

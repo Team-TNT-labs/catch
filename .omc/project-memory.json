@@ -124,8 +124,8 @@
   "hotPaths": [
     {
       "path": "Catch/Views/HomeView.swift",
-      "accessCount": 20,
-      "lastAccessed": 1781671551754,
+      "accessCount": 24,
+      "lastAccessed": 1781756501911,
       "type": "file"
     },
     {
@@ -142,8 +142,20 @@
     },
     {
       "path": "Catch/Views/Feed/FeedCard.swift",
+      "accessCount": 6,
+      "lastAccessed": 1781756514201,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/Profile/ProfileView.swift",
+      "accessCount": 6,
+      "lastAccessed": 1781756533532,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/Auth/OnboardingUsernameView.swift",
       "accessCount": 5,
-      "lastAccessed": 1781671618484,
+      "lastAccessed": 1781756367342,
       "type": "file"
     },
     {
@@ -159,45 +171,33 @@
       "type": "file"
     },
     {
-      "path": "Catch/Views/Auth/OnboardingUsernameView.swift",
-      "accessCount": 4,
-      "lastAccessed": 1781671478694,
-      "type": "file"
-    },
-    {
-      "path": "Catch/Views/Profile/ProfileView.swift",
-      "accessCount": 4,
-      "lastAccessed": 1781671640928,
-      "type": "file"
-    },
-    {
       "path": "Catch/App/RootView.swift",
-      "accessCount": 3,
-      "lastAccessed": 1781671447365,
+      "accessCount": 4,
+      "lastAccessed": 1781756336723,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Theme.swift",
+      "accessCount": 4,
+      "lastAccessed": 1781756425944,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/Auth/SignInView.swift",
+      "accessCount": 4,
+      "lastAccessed": 1781756452664,
       "type": "file"
     },
     {
       "path": "Catch/Views/Feed/FeedView.swift",
-      "accessCount": 3,
-      "lastAccessed": 1781671582876,
+      "accessCount": 4,
+      "lastAccessed": 1781756543599,
       "type": "file"
     },
     {
       "path": "Catch/CatchApp.swift",
       "accessCount": 2,
       "lastAccessed": 1781663894129,
-      "type": "file"
-    },
-    {
-      "path": "Catch/Theme.swift",
-      "accessCount": 2,
-      "lastAccessed": 1781671413431,
-      "type": "file"
-    },
-    {
-      "path": "Catch/Views/Auth/SignInView.swift",
-      "accessCount": 2,
-      "lastAccessed": 1781671459235,
       "type": "file"
     },
     {

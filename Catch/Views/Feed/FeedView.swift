@@ -51,11 +51,10 @@ struct FeedView: View {
                 .font(.subheadline.weight(.medium)).foregroundStyle(Theme.ink.opacity(0.5))
                 .multilineTextAlignment(.center)
             Button { showSearch = true } label: {
-                Label("친구 찾기", systemImage: "magnifyingglass")
-                    .font(.subheadline.bold()).foregroundStyle(.white)
+                Label("find friends", systemImage: "magnifyingglass")
+                    .font(.subheadline.bold()).foregroundStyle(.black)
                     .padding(.horizontal, 22).frame(height: 46)
                     .background(Theme.coral, in: Capsule())
-                    .shadow(color: Theme.coral.opacity(0.4), radius: 8, y: 4)
             }
             .padding(.top, 4)
         }

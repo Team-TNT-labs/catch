@@ -111,14 +111,13 @@ struct HomeView: View {
                     }
                 }
                 if let c = counts {
-                    HStack(spacing: 24) {
-                        countItem("수집", c.collections)
-                        countItem("팔로워", c.followers)
-                        countItem("팔로잉", c.following)
+                    HStack(spacing: 22) {
+                        countItem("collected", c.collections)
+                        countItem("followers", c.followers)
+                        countItem("following", c.following)
                     }
-                    .padding(.vertical, 8).padding(.horizontal, 20)
-                    .background(.white, in: Capsule())
-                    .shadow(color: Theme.ink.opacity(0.08), radius: 6, y: 3)
+                    .padding(.vertical, 9).padding(.horizontal, 20)
+                    .background(Theme.surface, in: Capsule())
                 }
 
                 folderBar
@@ -131,7 +130,7 @@ struct HomeView: View {
             Button { showCamera = true } label: {
                 Image(systemName: "camera.fill")
             }
-            .buttonStyle(CuteIconButtonStyle(bg: Theme.coral, fg: .white, size: 62))
+            .buttonStyle(CuteIconButtonStyle(bg: Theme.lime, fg: .black, size: 62))
             .padding(.trailing, 20)
             .padding(.bottom, 40)
         }
@@ -178,10 +177,9 @@ struct HomeView: View {
                 Button { showFolders = true } label: {
                     Image(systemName: "folder.badge.gearshape")
                         .font(.footnote.bold())
-                        .foregroundStyle(Theme.grape)
+                        .foregroundStyle(Theme.muted)
                         .padding(.horizontal, 14).frame(height: 32)
-                        .background(.white, in: Capsule())
-                        .shadow(color: Theme.ink.opacity(0.06), radius: 4, y: 2)
+                        .background(Theme.surface, in: Capsule())
                 }
             }
             .padding(.horizontal, 16)
@@ -192,17 +190,16 @@ struct HomeView: View {
         Button(action: action) {
             Text(title)
                 .font(.footnote.weight(.bold))
-                .foregroundStyle(selected ? .white : Theme.ink.opacity(0.7))
+                .foregroundStyle(selected ? .black : Theme.muted)
                 .padding(.horizontal, 16).frame(height: 32)
-                .background(selected ? Theme.coral : .white, in: Capsule())
-                .shadow(color: Theme.ink.opacity(0.06), radius: 4, y: 2)
+                .background(selected ? Theme.coral : Theme.surface, in: Capsule())
         }
     }
 
     private func countItem(_ label: String, _ value: Int) -> some View {
-        VStack(spacing: 1) {
-            Text("\(value)").font(.subheadline.bold()).foregroundStyle(Theme.ink)
-            Text(label).font(.caption2.weight(.medium)).foregroundStyle(Theme.ink.opacity(0.5))
+        VStack(spacing: 2) {
+            Text("\(value)").font(.headline).foregroundStyle(Theme.ink)
+            Text(label).font(.mono(10)).foregroundStyle(Theme.muted)
         }
     }
 }

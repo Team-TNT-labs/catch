@@ -18,8 +18,8 @@ struct RootView: View {
                 MainTabView().environmentObject(auth)
             }
         }
-        .fontDesign(.rounded)
         .tint(Theme.coral)
+        .preferredColorScheme(.dark)
         .animation(.easeInOut(duration: 0.25), value: auth.state)
     }
 }

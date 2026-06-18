@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 최초 로그인 시 username 설정. 형식·중복·예약어를 실시간 확인.
+/// SETLOG 터미널 톤 — username 설정.
 struct OnboardingUsernameView: View {
     @EnvironmentObject private var auth: AuthService
     @State private var username = ""
@@ -12,28 +12,31 @@ struct OnboardingUsernameView: View {
 
     private var normalized: String { username.lowercased() }
     private var formatValid: Bool { normalized.range(of: "^[a-z0-9_]{2,20}$", options: .regularExpression) != nil }
+    private var canSubmit: Bool { status == .available && !saving }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("이름을 정해요 🐣")
-                .font(.system(size: 30, weight: .heavy, design: .rounded))
+        VStack(alignment: .leading, spacing: 22) {
+            Text("→ username")
+                .font(.mono(22, .bold))
                 .foregroundStyle(Theme.ink)
-            Text("영문 소문자·숫자·밑줄(_) 2~20자")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(Theme.ink.opacity(0.5))
 
-            HStack(spacing: 6) {
-                Text("@").foregroundStyle(Theme.coral).fontWeight(.bold)
-                TextField("", text: $username, prompt: Text("username").foregroundColor(Theme.ink.opacity(0.3)))
+            Text("사용할 이름을 정해주세요.")
+                .foregroundStyle(Theme.muted)
+
+            HStack(spacing: 4) {
+                Text("@").font(.mono(20)).foregroundStyle(Theme.coral)
+                TextField("", text: $username, prompt: Text("username").foregroundColor(Theme.muted.opacity(0.6)))
+                    .font(.mono(20))
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .foregroundStyle(Theme.ink)
                     .onChange(of: username) { _, _ in scheduleCheck() }
                 statusIcon
             }
-            .padding(.horizontal, 18).frame(height: 56)
-            .background(.white, in: Capsule())
-            .overlay(Capsule().stroke(borderColor, lineWidth: 2))
+            .padding(.bottom, 8)
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(underlineColor).frame(height: 1.5)
+            }
 
             statusText
 
@@ -43,41 +46,42 @@ struct OnboardingUsernameView: View {
                 saving = true
                 Task { _ = await auth.setUsername(normalized); saving = false }
             } label: {
-                Text(saving ? "만드는 중…" : "시작하기")
+                Text(saving ? "saving…" : "continue →")
+                    .font(.mono(17, .semibold))
+                    .underline()
+                    .foregroundStyle(canSubmit ? Theme.ink : Theme.muted.opacity(0.5))
             }
-            .buttonStyle(CuteButtonStyle(bg: canSubmit ? Theme.coral : Theme.ink.opacity(0.2)))
             .disabled(!canSubmit || saving)
+            .padding(.bottom, 24)
         }
         .padding(28)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Theme.background.ignoresSafeArea())
+        .background(Color.black.ignoresSafeArea())
     }
 
-    private var canSubmit: Bool { status == .available && !saving }
-
-    private var borderColor: Color {
+    private var underlineColor: Color {
         switch status {
-        case .available: return Theme.mint
-        case .taken, .invalid: return Theme.coral
-        default: return .clear
+        case .available: return Theme.coral
+        case .taken, .invalid: return .red
+        default: return Theme.surface
         }
     }
 
     @ViewBuilder private var statusIcon: some View {
         switch status {
         case .checking: ProgressView().tint(Theme.coral)
-        case .available: Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.mint)
-        case .taken, .invalid: Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.coral)
+        case .available: Image(systemName: "checkmark").foregroundStyle(Theme.coral)
+        case .taken, .invalid: Image(systemName: "xmark").foregroundStyle(.red)
         case .idle: EmptyView()
         }
     }
 
     @ViewBuilder private var statusText: some View {
         switch status {
-        case .invalid: Text("형식이 올바르지 않아요").foregroundStyle(Theme.coral).font(.caption.weight(.medium))
-        case .taken: Text("이미 사용 중이에요 🥲").foregroundStyle(Theme.coral).font(.caption.weight(.medium))
-        case .available: Text("사용할 수 있어요! 🎉").foregroundStyle(Theme.mint).font(.caption.weight(.bold))
-        default: EmptyView()
+        case .invalid: Text("a-z, 0-9, _ · 2–20자").font(.mono(12)).foregroundStyle(.red)
+        case .taken: Text("이미 사용 중이에요").font(.mono(12)).foregroundStyle(.red)
+        case .available: Text("사용 가능 ✓").font(.mono(12)).foregroundStyle(Theme.coral)
+        default: Text("a-z, 0-9, _ · 2–20자").font(.mono(12)).foregroundStyle(Theme.muted)
         }
     }
 

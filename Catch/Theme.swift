@@ -1,25 +1,35 @@
 import SwiftUI
 import UIKit
 
-/// 뽀짝 디자인 토큰 — 파스텔 + 라운드.
+/// SETLOG 무드 — 다크 + 모노 악센트. 대부분 iOS 기본, 몇 군데만 키치.
 enum Theme {
-    static let ink     = Color(hex: 0x3A2E3F)   // 따뜻한 먹색
-    static let cream   = Color(hex: 0xFFF7F2)
-    static let coral   = Color(hex: 0xFF7A90)    // 메인 액센트(딸기)
-    static let grape   = Color(hex: 0xB18CFF)    // 보조(라일락)
-    static let mint    = Color(hex: 0x57E0BE)
-    static let butter  = Color(hex: 0xFFD36B)
+    static let ink     = Color.white
+    static let muted   = Color(white: 0.55)
+    static let surface = Color(white: 0.13)      // 다크 그레이 pill/카드
+    static let cream   = Color.black             // 베이스 배경(이름 호환)
+    static let coral   = Color(hex: 0xE3FB85)    // 메인 악센트 = 로고 라임(이름 호환)
+    static let grape   = Color(hex: 0xC4B0FF)
+    static let mint    = Color(hex: 0xE3FB85)
+    static let butter  = Color(hex: 0xF6E58D)
+    static let lime    = Color(hex: 0xE3FB85)
 
-    static let bgTop    = Color(hex: 0xFFE6EE)   // 코튼캔디
-    static let bgBottom = Color(hex: 0xE9E2FF)   // 소프트 라일락
+    static let bgTop    = Color.black
+    static let bgBottom = Color.black
 
     static var background: LinearGradient {
-        LinearGradient(colors: [bgTop, bgBottom], startPoint: .top, endPoint: .bottom)
+        LinearGradient(colors: [.black, .black], startPoint: .top, endPoint: .bottom)
     }
 
-    // SpriteKit 씬 배경 그라데이션용 UIColor
-    static let sceneTop = UIColor(hex: 0xFFE6EE)
-    static let sceneBottom = UIColor(hex: 0xE3DBFF)
+    // SpriteKit 씬 배경(거의 검정 — 컬러 누끼가 튐)
+    static let sceneTop = UIColor(white: 0.06, alpha: 1)
+    static let sceneBottom = UIColor(white: 0.02, alpha: 1)
+}
+
+extension Font {
+    /// 터미널/키치 악센트용 모노스페이스.
+    static func mono(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight, design: .monospaced)
+    }
 }
 
 extension Color {
@@ -41,10 +51,10 @@ extension UIColor {
     }
 }
 
-/// 통통한 알약 버튼.
+/// 통통한 알약 버튼(다크).
 struct CuteButtonStyle: ButtonStyle {
     var bg: Color = Theme.coral
-    var fg: Color = .white
+    var fg: Color = .black
     var height: CGFloat = 56
 
     func makeBody(configuration: Configuration) -> some View {
@@ -54,25 +64,23 @@ struct CuteButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .frame(height: height)
             .background(bg, in: Capsule())
-            .shadow(color: bg.opacity(0.45), radius: 12, y: 6)
-            .scaleEffect(configuration.isPressed ? 0.95 : 1)
+            .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }
 
-/// 떠다니는 둥근 아이콘 버튼.
+/// 둥근 아이콘 버튼(다크 그레이 — SETLOG 하단 버튼 톤).
 struct CuteIconButtonStyle: ButtonStyle {
-    var bg: Color = .white
-    var fg: Color = Theme.ink
+    var bg: Color = Theme.surface
+    var fg: Color = .white
     var size: CGFloat = 54
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: size * 0.42, weight: .bold, design: .rounded))
+            .font(.system(size: size * 0.4, weight: .semibold))
             .foregroundStyle(fg)
             .frame(width: size, height: size)
             .background(bg, in: Circle())
-            .shadow(color: Theme.ink.opacity(0.18), radius: 10, y: 5)
             .scaleEffect(configuration.isPressed ? 0.9 : 1)
             .animation(.spring(response: 0.3, dampingFraction: 0.55), value: configuration.isPressed)
     }

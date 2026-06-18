@@ -62,20 +62,18 @@ struct ProfileView: View {
                 Button {
                     Task { await toggleFollow() }
                 } label: {
-                    Text(following ? "팔로잉 ✓" : "팔로우")
+                    Text(following ? "following ✓" : "follow")
                         .font(.subheadline.bold())
-                        .foregroundStyle(following ? Theme.ink.opacity(0.6) : .white)
+                        .foregroundStyle(following ? Theme.muted : .black)
                         .frame(width: 130, height: 38)
-                        .background(following ? Color.white : Theme.coral, in: Capsule())
-                        .shadow(color: (following ? Theme.ink : Theme.coral).opacity(0.25), radius: 6, y: 3)
+                        .background(following ? Theme.surface : Theme.coral, in: Capsule())
                 }
                 .disabled(working)
             }
         }
         .padding(.vertical, 16)
         .frame(maxWidth: .infinity)
-        .background(.white.opacity(0.85), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .shadow(color: Theme.ink.opacity(0.08), radius: 10, y: 5)
+        .background(Theme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     private func stat(_ label: String, _ value: Int?) -> some View {
