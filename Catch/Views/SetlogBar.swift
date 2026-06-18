@@ -14,7 +14,7 @@ enum CatchMode: String, CaseIterable {
 
 /// SETLOG 하단 바 — [ camera | jar | profile 세그먼트 ]만.
 struct SetlogBottomBar: View {
-    @Binding var mode: CatchMode
+    @Binding var selection: CatchMode?
 
     @Namespace private var seg
 
@@ -33,7 +33,7 @@ struct SetlogBottomBar: View {
     }
 
     private func segment(_ value: CatchMode) -> some View {
-        let selected = mode == value
+        let selected = selection == value
         return Text(value.label)
             .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(selected ? .white : Theme.muted)
@@ -47,7 +47,7 @@ struct SetlogBottomBar: View {
             }
             .contentShape(Capsule())
             .onTapGesture {
-                withAnimation(.spring(response: 0.38, dampingFraction: 0.78)) { mode = value }
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.78)) { selection = value }
             }
     }
 }
