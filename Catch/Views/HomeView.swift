@@ -20,9 +20,11 @@ final class SceneHolder: ObservableObject {
     }
 
     func focus(_ id: UUID) async {
-        guard let c = byId[id] else { return }
-        let img = await repo.displayImage(for: c)
-        focusedImage = img
+        guard let c = byId[id], let img = await repo.displayImage(for: c) else { return }
+        // 씬과 동일하게 라임 테두리를 입혀서 보여준다.
+        let working = img.resized(maxDimension: 420)
+        let borderW = max(working.size.width, working.size.height) * 0.045
+        focusedImage = working.stickerBordered(color: StickerScene.rimColor, width: borderW)
         focused = c
     }
 
