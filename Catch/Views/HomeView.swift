@@ -7,7 +7,7 @@ final class SceneHolder: ObservableObject {
     let scene: StickerScene
     private let repo = CatchRepository.shared
 
-    @Published var isLoading = true
+    @Published var isLoading = false
     @Published var isEmpty = false
     @Published var isGrabbing = false   // 스티커 드래그 중 → 페이지 스와이프 잠금
 
@@ -33,17 +33,25 @@ final class SceneHolder: ObservableObject {
     }
 
     func reload(folderId: UUID?) async {
-        isLoading = true
         scene.clearAll()
         byId.removeAll()
-        let catches = (try? await repo.loadMine(folderId: folderId)) ?? []
-        isEmpty = catches.isEmpty
+        // 로컬에서 즉시 표시(네트워크 대기 없음)
+        let local = repo.localCatches(folderId: folderId)
+        isEmpty = local.isEmpty
         isLoading = false
-        for c in catches {
+        for c in local {
             byId[c.id] = c
-            try? await Task.sleep(nanoseconds: 80_000_000)
+            try? await Task.sleep(nanoseconds: 70_000_000)
             await spawn(c)
         }
+        // 백그라운드: 클라우드와 병합해 다른 기기 캐치 추가
+        let added = await repo.refreshFromCloud()
+        for c in added where folderId == nil || c.folderId == folderId {
+            guard byId[c.id] == nil else { continue }
+            byId[c.id] = c
+            await spawn(c)
+        }
+        if !byId.isEmpty { isEmpty = false }
     }
 
     func add(_ c: CloudCatch) async {

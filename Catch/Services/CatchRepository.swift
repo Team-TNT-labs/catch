@@ -3,8 +3,15 @@ import Supabase
 
 enum CatchError: Error { case encodingFailed, notAuthed }
 
+/// 로컬 매니페스트 엔트리(동기화 여부 포함).
+private struct LocalCatch: Codable {
+    var cloud: CloudCatch
+    var synced: Bool
+}
+
 /// 로컬-퍼스트 캐치 저장.
-/// 촬영 → 로컬에 즉시 저장하고 바로 항아리에 표시(즐거움 우선) → 백그라운드로 Supabase 동기화.
+/// 표시는 항상 로컬 매니페스트(mine.json)에서 즉시 — 네트워크를 절대 기다리지 않는다.
+/// Supabase 업로드/병합은 백그라운드.
 @MainActor
 final class CatchRepository {
     static let shared = CatchRepository()
@@ -24,22 +31,29 @@ final class CatchRepository {
         cacheDir.appendingPathComponent(path.replacingOccurrences(of: "/", with: "_"))
     }
 
-    // 미동기화(pending) 매니페스트
-    private var pendingURL: URL {
-        fm.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("pending.json")
+    // 로컬 매니페스트(내 모든 캐치)
+    private var mineURL: URL {
+        fm.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("mine.json")
     }
-    private func loadPending() -> [CloudCatch] {
-        guard let data = try? Data(contentsOf: pendingURL),
-              let list = try? JSONDecoder().decode([CloudCatch].self, from: data) else { return [] }
+    private func loadLocal() -> [LocalCatch] {
+        guard let data = try? Data(contentsOf: mineURL),
+              let list = try? JSONDecoder().decode([LocalCatch].self, from: data) else { return [] }
         return list
     }
-    private func savePending(_ list: [CloudCatch]) {
-        if let data = try? JSONEncoder().encode(list) { try? data.write(to: pendingURL, options: .atomic) }
+    private func saveLocal(_ list: [LocalCatch]) {
+        if let data = try? JSONEncoder().encode(list) { try? data.write(to: mineURL, options: .atomic) }
     }
-    private func addPending(_ c: CloudCatch) { var l = loadPending(); l.append(c); savePending(l) }
-    private func removePending(_ id: UUID) { savePending(loadPending().filter { $0.id != id }) }
+    private func markSynced(_ id: UUID) {
+        var l = loadLocal()
+        if let i = l.firstIndex(where: { $0.cloud.id == id }) { l[i].synced = true; saveLocal(l) }
+    }
 
-    // MARK: - 로컬 즉시 저장 (촬영 직후)
+    /// 즉시(동기) 로컬 캐치 목록 — 항아리 표시용.
+    func localCatches(folderId: UUID? = nil) -> [CloudCatch] {
+        loadLocal().map { $0.cloud }.filter { folderId == nil || $0.folderId == folderId }
+    }
+
+    // MARK: - 촬영 직후: 로컬 즉시 저장
     @discardableResult
     func capture(image: UIImage) async throws -> CloudCatch {
         let uid = try await Supa.client.auth.session.user.id
@@ -53,18 +67,19 @@ final class CatchRepository {
 
         let imagePath = "catches/\(uidStr)/\(idStr).png"
         let bodyPath = "catches/\(uidStr)/\(idStr)_body.png"
-        // 로컬 캐시에 즉시 기록(표시·오프라인·동기화 소스)
         try? png.write(to: cacheURL(imagePath))
         try? bodyPng.write(to: cacheURL(bodyPath))
 
         let cloud = CloudCatch(id: id, ownerId: uid, folderId: nil,
                                imagePath: imagePath, bodyPath: bodyPath, title: nil, isPublic: true)
-        addPending(cloud)
-        Task { await self.sync(cloud) }   // 백그라운드 업로드
+        var local = loadLocal()
+        local.append(LocalCatch(cloud: cloud, synced: false))
+        saveLocal(local)
+        Task { await self.sync(cloud) }
         return cloud
     }
 
-    // MARK: - 백그라운드 동기화
+    // MARK: - 백그라운드 업로드
     private func sync(_ c: CloudCatch) async {
         guard let png = try? Data(contentsOf: cacheURL(c.imagePath)) else { return }
         let opts = FileOptions(contentType: "image/png", upsert: true)
@@ -77,33 +92,36 @@ final class CatchRepository {
                                       owner_id: c.ownerId.uuidString.lowercased(),
                                       image_path: c.imagePath, body_path: c.bodyPath ?? "")
             try await Supa.client.from("catches").upsert(payload).execute()
-            removePending(c.id)
+            markSynced(c.id)
         } catch {
-            // 실패 시 pending 유지 → 다음 실행/로드 때 재시도
+            // 실패 시 unsynced 유지 → refresh 때 재시도
         }
     }
 
-    func retryPending() async {
-        for c in loadPending() { await sync(c) }
+    /// 백그라운드: 클라우드와 병합. 새로 받은(다른 기기) 캐치들을 반환. 미동기화분은 재업로드.
+    @discardableResult
+    func refreshFromCloud() async -> [CloudCatch] {
+        guard let uid = try? await Supa.client.auth.session.user.id else { return [] }
+        let cloud: [CloudCatch] = (try? await Supa.client
+            .from("catches").select().eq("owner_id", value: uid.uuidString)
+            .order("caught_at", ascending: true).execute().value) ?? []
+
+        var local = loadLocal()
+        let localIds = Set(local.map { $0.cloud.id })
+        var added: [CloudCatch] = []
+        for c in cloud where !localIds.contains(c.id) {
+            local.append(LocalCatch(cloud: c, synced: true))
+            added.append(c)
+        }
+        saveLocal(local)
+        for l in local where !l.synced { await sync(l.cloud) }
+        return added
     }
 
-    // MARK: - Load (클라우드 + 로컬 pending 병합)
-    func loadMine(folderId: UUID? = nil) async throws -> [CloudCatch] {
-        let uid = try await Supa.client.auth.session.user.id
-        let base = Supa.client.from("catches").select().eq("owner_id", value: uid.uuidString)
-        let cloud: [CloudCatch]
-        if let folderId {
-            cloud = (try? await base.eq("folder_id", value: folderId.uuidString)
-                .order("caught_at", ascending: true).execute().value) ?? []
-        } else {
-            cloud = (try? await base.order("caught_at", ascending: true).execute().value) ?? []
-        }
-        let cloudIds = Set(cloud.map { $0.id })
-        let pending = loadPending().filter { p in
-            !cloudIds.contains(p.id) && (folderId == nil || p.folderId == folderId)
-        }
-        Task { await retryPending() }
-        return cloud + pending
+    // FoldersView 등에서 쓰는 비동기 래퍼(로컬 즉시 + 백그라운드 refresh)
+    func loadMine(folderId: UUID? = nil) async -> [CloudCatch] {
+        Task { await refreshFromCloud() }
+        return localCatches(folderId: folderId)
     }
 
     func loadUser(_ userId: UUID) async throws -> [CloudCatch] {
@@ -128,11 +146,20 @@ final class CatchRepository {
 
     // MARK: - Delete
     func delete(_ c: CloudCatch) async {
-        removePending(c.id)
+        saveLocal(loadLocal().filter { $0.cloud.id != c.id })
         try? await Supa.client.from("catches").delete().eq("id", value: c.id.uuidString).execute()
         var paths = [c.imagePath]
         if let bp = c.bodyPath { paths.append(bp) }
         _ = try? await Supa.client.storage.from(bucket).remove(paths: paths)
         for p in paths { try? fm.removeItem(at: cacheURL(p)) }
+    }
+
+    /// 폴더 배정(로컬 즉시 반영).
+    func setFolder(_ catchId: UUID, folderId: UUID?) {
+        var l = loadLocal()
+        if let i = l.firstIndex(where: { $0.cloud.id == catchId }) {
+            l[i].cloud.folderId = folderId
+            saveLocal(l)
+        }
     }
 }

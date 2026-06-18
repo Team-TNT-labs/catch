@@ -83,12 +83,13 @@ struct FoldersView: View {
 
     private func reload() async {
         folders = await frepo.listMine()
-        catches = (try? await crepo.loadMine()) ?? []
+        catches = await crepo.loadMine()
     }
 
     private func assign(_ folderId: UUID?) {
         guard let target = assignTarget else { return }
         assignTarget = nil
+        crepo.setFolder(target.id, folderId: folderId)   // 로컬 즉시 반영
         Task {
             await frepo.assign(catchId: target.id, folderId: folderId)
             await reload()
