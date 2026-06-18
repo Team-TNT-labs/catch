@@ -153,6 +153,12 @@
       "type": "file"
     },
     {
+      "path": "Catch/App/RootView.swift",
+      "accessCount": 7,
+      "lastAccessed": 1781772991664,
+      "type": "file"
+    },
+    {
       "path": "Catch/Views/Feed/FeedCard.swift",
       "accessCount": 6,
       "lastAccessed": 1781756514201,
@@ -180,12 +186,6 @@
       "path": "Catch/Views/Auth/OnboardingUsernameView.swift",
       "accessCount": 5,
       "lastAccessed": 1781756367342,
-      "type": "file"
-    },
-    {
-      "path": "Catch/App/RootView.swift",
-      "accessCount": 5,
-      "lastAccessed": 1781757245602,
       "type": "file"
     },
     {
