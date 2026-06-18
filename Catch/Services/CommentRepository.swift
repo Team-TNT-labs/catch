@@ -12,10 +12,27 @@ final class CommentRepository {
         let body: String
     }
 
+    private struct CountRow: Decodable { let comment_count: Int }
+
+    private var cache: [UUID: [Comment]] = [:]   // 메모리 캐시
+
+    /// 캐시된 댓글(있으면 즉시 표시용).
+    func cached(_ catchId: UUID) -> [Comment]? { cache[catchId] }
+
     func list(_ catchId: UUID) async -> [Comment] {
-        (try? await Supa.client
+        let rows: [Comment] = (try? await Supa.client
             .rpc("comments_for", params: ["p_catch": catchId.uuidString])
             .execute().value) ?? []
+        cache[catchId] = rows
+        return rows
+    }
+
+    /// 댓글 수(catches.comment_count 트리거 값).
+    func count(_ catchId: UUID) async -> Int {
+        let rows: [CountRow] = (try? await Supa.client
+            .from("catches").select("comment_count")
+            .eq("id", value: catchId.uuidString).execute().value) ?? []
+        return rows.first?.comment_count ?? 0
     }
 
     @discardableResult

@@ -91,8 +91,9 @@ final class CatchRepository {
     }
 
     // MARK: - 백그라운드 업로드
-    private func sync(_ c: CloudCatch) async {
-        guard let png = try? Data(contentsOf: cacheURL(c.imagePath)) else { return }
+    @discardableResult
+    private func sync(_ c: CloudCatch) async -> Bool {
+        guard let png = try? Data(contentsOf: cacheURL(c.imagePath)) else { return false }
         let opts = FileOptions(contentType: "image/png", upsert: true)
         do {
             try await Supa.client.storage.from(bucket).upload(c.imagePath, data: png, options: opts)
@@ -102,12 +103,32 @@ final class CatchRepository {
             let payload = CatchInsert(id: c.id.uuidString.lowercased(),
                                       owner_id: c.ownerId.uuidString.lowercased(),
                                       image_path: c.imagePath, body_path: c.bodyPath ?? "")
-            try await Supa.client.from("catches").upsert(payload).execute()
+            // 충돌 시 DO NOTHING — 컬럼 제한 UPDATE 권한 불필요(INSERT만).
+            try await Supa.client.from("catches").upsert(payload, onConflict: "id", ignoreDuplicates: true).execute()
             markSynced(c.id)
+            return true
         } catch {
-            // 실패 시 unsynced 유지 → refresh 때 재시도. 무음 대신 로깅으로 진단 가능하게.
+            // 실패 시 unsynced 유지 → refresh 때 재시도.
             Log.sync.error("catch \(c.id, privacy: .public) upload failed: \(error.localizedDescription, privacy: .public)")
+            return false
         }
+    }
+
+    private struct IdRow: Decodable { let id: UUID }
+    private var ensuredOnServer: Set<UUID> = []   // 세션 내 서버 존재 확인 캐시
+
+    /// 좋아요/댓글 전에 이 캐치가 서버에 존재하도록 보장(로컬-퍼스트라 미동기화일 수 있음).
+    /// 서버 존재를 한 번 확인하면 세션 동안 캐시해 재확인하지 않는다.
+    @discardableResult
+    func ensureUploaded(_ catchId: UUID) async -> Bool {
+        if ensuredOnServer.contains(catchId) { return true }
+        guard let entry = loadLocal().first(where: { $0.cloud.id == catchId }) else { return true }
+        let rows: [IdRow] = (try? await Supa.client.from("catches")
+            .select("id").eq("id", value: catchId.uuidString).execute().value) ?? []
+        if !rows.isEmpty { ensuredOnServer.insert(catchId); return true }
+        let ok = await sync(entry.cloud)
+        if ok { ensuredOnServer.insert(catchId) }
+        return ok
     }
 
     /// 백그라운드: 클라우드와 병합. 새로 받은(다른 기기) 캐치들을 반환. 미동기화분은 재업로드.

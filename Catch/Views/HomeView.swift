@@ -1,6 +1,18 @@
 import SwiftUI
 import SpriteKit
 
+/// 항아리 보기 모드 — 중력(물리) ↔ 그리드(정렬).
+enum JarMode: CaseIterable {
+    case gravity, grid
+    /// 버튼에 표시할 아이콘(탭하면 전환될 모드를 암시).
+    var icon: String {
+        switch self {
+        case .gravity: return "square.grid.2x2"        // 탭 → 그리드
+        case .grid:    return "circle.grid.3x3.fill"   // 탭 → 중력
+        }
+    }
+}
+
 /// 물리 씬 + 클라우드 수집 로딩/삭제.
 @MainActor
 final class SceneHolder: ObservableObject {
@@ -10,15 +22,28 @@ final class SceneHolder: ObservableObject {
     @Published var isLoading = false
     @Published var isEmpty = false
     @Published var isGrabbing = false   // 스티커 드래그 중 → 페이지 스와이프 잠금
-    @Published var gridMode = false     // 그리드(스크롤 격자) ↔ 물리 항아리
+    @Published var mode: JarMode = .gravity   // 중력 / 둥둥 / 그리드
     @Published private(set) var catches: [CloudCatch] = []   // 그리드 표시용(추가 순서)
     @Published var focused: CloudCatch?       // 탭한 스티커(포커스 프리뷰)
     @Published var focusedImage: UIImage?
     @Published var pendingDeleteId: UUID?     // 꾹 눌러 삭제 요청 → 확인 대기
 
-    func toggleGrid() {
-        gridMode.toggle()
-        scene.isPaused = gridMode   // 그리드 동안 물리 일시정지(스크롤 격자로 대체)
+    var isGrid: Bool { mode == .grid }
+
+    /// 탭할 때마다 다음 모드로 순환(중력 → 둥둥 → 그리드 → …).
+    func cycleMode() {
+        let all = JarMode.allCases
+        let next = all[((all.firstIndex(of: mode) ?? 0) + 1) % all.count]
+        setMode(next)
+    }
+
+    func setMode(_ m: JarMode) {
+        mode = m
+        // 실제 스티커 노드가 움직여 정렬/해제(스크롤 격자는 그 위로 페이드인).
+        switch m {
+        case .grid:    scene.arrangeGrid()
+        case .gravity: scene.releaseGrid()
+        }
     }
 
     func focus(_ id: UUID) async {
@@ -95,9 +120,8 @@ final class SceneHolder: ObservableObject {
         await remove(id)
     }
 
-    /// 꾹 눌러 삭제 요청을 확정(연출 후 삭제).
-    func confirmDelete() async {
-        guard let id = pendingDeleteId else { return }
+    /// 꾹 눌러 삭제 요청을 확정(연출 후 삭제). id를 명시로 받아 다이얼로그 dismiss와의 레이스 회피.
+    func confirmDelete(_ id: UUID) async {
         pendingDeleteId = nil
         scene.vanish(id: id)
         await remove(id)
@@ -138,8 +162,8 @@ struct HomeView: View {
             SpriteView(scene: holder.scene, options: [.ignoresSiblingOrder])
                 .ignoresSafeArea()
 
-            // 그리드 보기 — 물리 대신 고정 크기 스크롤 격자.
-            if holder.gridMode {
+            // 그리드 보기 — 작아지지 않게 고정 크기 스크롤 격자(물리 일시정지 위에 덮음).
+            if holder.isGrid {
                 gridView.transition(.opacity)
             }
 
@@ -154,7 +178,7 @@ struct HomeView: View {
             }
             .padding(.top, deviceSafeAreaTop + 4)
         }
-        .animation(.easeInOut(duration: 0.25), value: holder.gridMode)
+        .animation(.easeInOut(duration: 0.45), value: holder.isGrid)
         .task {
             // 하단 커스텀 툴바(가운데 알약) 충돌 바디 설정 — 스티커가 바에 안 가려지게.
             holder.scene.toolbarBarrier = (width: 226, height: 72, bottomMargin: deviceSafeAreaBottom + 6)
@@ -169,17 +193,11 @@ struct HomeView: View {
                 }
             })
         }
-        .confirmationDialog(
-            "이 스티커를 삭제할까요?",
-            isPresented: Binding(get: { holder.pendingDeleteId != nil },
-                                 set: { if !$0 { holder.cancelDelete() } }),
-            titleVisibility: .visible
-        ) {
-            Button("삭제", role: .destructive) { Task { await holder.confirmDelete() } }
-            Button("취소", role: .cancel) { holder.cancelDelete() }
-        }
+        // 삭제 확인 다이얼로그는 컨테이너(MainContainerView)에서 — 페이저 자식인 HomeView는
+        // holder 변경에 재렌더되지 않아 여기 붙이면 안 뜬다.
     }
 
+    /// 그리드 보기 — 고정 크기 셀의 스크롤 격자(탭→포커스, 길게눌러 삭제).
     /// 그리드 보기 — 고정 크기 셀의 스크롤 격자(탭→포커스, 길게눌러 삭제).
     private var gridView: some View {
         ScrollView {
@@ -235,9 +253,9 @@ struct HomeView: View {
             }
             Spacer()
             HStack(spacing: 10) {
-                // 뷰 옵션 — 중력 ↔ 그리드 정렬
-                Button { holder.toggleGrid() } label: {
-                    Image(systemName: holder.gridMode ? "circle.grid.3x3.fill" : "square.grid.2x2")
+                // 보기 모드 — 누를 때마다 중력 → 둥둥 → 그리드 순환
+                Button { holder.cycleMode() } label: {
+                    Image(systemName: holder.mode.icon)
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: 44, height: 44)

@@ -45,7 +45,12 @@ final class FeedRepository {
     private struct LikeCountRow: Decodable { let like_count: Int }
     private struct LikeRow: Decodable { let user_id: UUID }
 
-    /// 특정 캐치의 (내가 눌렀는지, 총 좋아요 수).
+    private var likeCache: [UUID: (liked: Bool, count: Int)] = [:]   // 메모리 캐시
+
+    /// 캐시된 좋아요 상태(있으면 즉시 표시용).
+    func cachedLikeInfo(_ catchId: UUID) -> (liked: Bool, count: Int)? { likeCache[catchId] }
+
+    /// 특정 캐치의 (내가 눌렀는지, 총 좋아요 수). 결과를 캐시.
     func likeInfo(_ catchId: UUID) async -> (liked: Bool, count: Int) {
         let countRows: [LikeCountRow] = (try? await Supa.client
             .from("catches").select("like_count")
@@ -56,16 +61,20 @@ final class FeedRepository {
             .from("likes").select("user_id")
             .eq("catch_id", value: catchId.uuidString)
             .eq("user_id", value: me.uuidString).execute().value) ?? []
-        return (!mine.isEmpty, count)
+        let result = (!mine.isEmpty, count)
+        likeCache[catchId] = result
+        return result
     }
 
     func like(_ catchId: UUID) async {
+        likeCache[catchId] = (true, (likeCache[catchId]?.count ?? 0) + 1)
         guard let me = try? await Supa.client.auth.session.user.id else { return }
         _ = try? await Supa.client.from("likes")
             .insert(["user_id": me.uuidString, "catch_id": catchId.uuidString]).execute()
     }
 
     func unlike(_ catchId: UUID) async {
+        likeCache[catchId] = (false, max(0, (likeCache[catchId]?.count ?? 1) - 1))
         guard let me = try? await Supa.client.auth.session.user.id else { return }
         _ = try? await Supa.client.from("likes").delete()
             .eq("user_id", value: me.uuidString)
