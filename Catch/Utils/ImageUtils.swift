@@ -1,6 +1,25 @@
 import UIKit
+import CoreImage
 
 extension UIImage {
+    /// 알파 가장자리를 부드럽게(블러 후 다시 샤프닝) — 누끼가 울퉁불퉁해도 외곽선이 깔끔.
+    func alphaSmoothed(blur: CGFloat) -> UIImage {
+        guard blur > 0, let cg = cgImage else { return self }
+        let ci = CIImage(cgImage: cg)
+        let extent = ci.extent
+        let blurred = ci.clampedToExtent()
+            .applyingGaussianBlur(sigma: Double(blur))
+            .cropped(to: extent)
+        // 알파 ramp를 0.5 중심으로 가파르게 → 매끈한 경계 유지(작은 들쭉날쭉 제거).
+        let sharp = blurred.applyingFilter("CIColorMatrix", parameters: [
+            "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 6),
+            "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: -2.5)
+        ])
+        let ctx = CIContext(options: nil)
+        guard let out = ctx.createCGImage(sharp, from: extent) else { return self }
+        return UIImage(cgImage: out, scale: scale, orientation: .up)
+    }
+
     /// imageOrientation(카메라 EXIF 회전)을 픽셀에 베이크해 `.up` 방향 이미지를 만든다.
     /// `SKTexture(image:)`가 imageOrientation을 무시하는 문제를 방지한다.
     func orientationNormalized() -> UIImage {
@@ -66,7 +85,8 @@ extension UIImage {
         let newSize = CGSize(width: size.width + pad * 2, height: size.height + pad * 2)
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = scale; format.opaque = false
-        let silhouette = tinted(color)
+        // 외곽선용 실루엣은 알파를 매끈하게 다듬어 들쭉날쭉함 제거.
+        let silhouette = alphaSmoothed(blur: max(1, width * 0.7)).tinted(color)
         let center = CGRect(x: pad, y: pad, width: size.width, height: size.height)
         let renderer = UIGraphicsImageRenderer(size: newSize, format: format)
         return renderer.image { _ in
