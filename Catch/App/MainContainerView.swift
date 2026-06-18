@@ -55,6 +55,10 @@ struct MainContainerView: View {
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: page)
         .animation(.easeInOut(duration: 0.25), value: capturing)
+        .task {
+            // 진입 시 카메라 권한 팝업을 한 번 띄운다(세션은 카메라 페이지에서 시작).
+            await camera.ensurePermission()
+        }
     }
 
     /// 한 페이지를 부드러운 스크롤 트랜지션(살짝 페이드+스케일)으로 감싼다.

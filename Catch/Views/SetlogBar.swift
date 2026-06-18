@@ -11,16 +11,18 @@ enum CatchMode: String, CaseIterable {
         }
     }
 
+    /// 하찮고 귀여운 아이콘.
     var icon: String {
         switch self {
         case .camera: return "camera.fill"
-        case .jar: return "archivebox.fill"
-        case .profile: return "person.fill"
+        case .jar: return "shippingbox.fill"
+        case .profile: return "face.smiling.inverse"
         }
     }
 }
 
-/// SETLOG 하단 바 — 아이콘 세그먼트. 탭/드래그로 전환(iOS 26 탭바처럼).
+/// 완전 커스텀 하단 바 — 다크 알약 + 테마 라임 라인 + 하찮은 아이콘.
+/// 탭으로 전환, 바 위에서 드래그해도 전환(iOS 26 탭바처럼).
 struct SetlogBottomBar: View {
     @Binding var selection: CatchMode?
 
@@ -29,27 +31,27 @@ struct SetlogBottomBar: View {
     private let modes = CatchMode.allCases
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 4) {
             ForEach(modes, id: \.self) { segment($0) }
         }
-        .padding(4)
-        .liquidGlass(Capsule())
+        .padding(6)
+        .background(Capsule().fill(Color.black.opacity(0.9)))
+        .overlay(Capsule().strokeBorder(Theme.lime, lineWidth: 2))   // 테마 라임 라인
         .background(
             GeometryReader { g in
-                Color.clear.onAppear { pillWidth = g.size.width }
+                Color.clear
+                    .onAppear { pillWidth = g.size.width }
+                    .onChange(of: g.size.width) { _, w in pillWidth = w }
             }
         )
         .contentShape(Capsule())
-        .gesture(
-            DragGesture(minimumDistance: 0)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 12)
                 .onChanged { v in
                     guard pillWidth > 0 else { return }
                     let i = max(0, min(modes.count - 1,
                                        Int(v.location.x / (pillWidth / CGFloat(modes.count)))))
-                    let m = modes[i]
-                    if selection != m {
-                        withAnimation(.spring(response: 0.38, dampingFraction: 0.78)) { selection = m }
-                    }
+                    select(modes[i])
                 }
         )
     }
@@ -57,15 +59,22 @@ struct SetlogBottomBar: View {
     private func segment(_ value: CatchMode) -> some View {
         let selected = selection == value
         return Image(systemName: value.icon)
-            .font(.system(size: 16, weight: .semibold))
-            .foregroundStyle(selected ? .white : Theme.muted)
-            .frame(width: 54, height: 38)
+            .font(.system(size: 17, weight: .bold))
+            .foregroundStyle(selected ? .black : Theme.lime)
+            .frame(width: 52, height: 40)
             .background {
                 if selected {
-                    Capsule().fill(.white.opacity(0.22))
+                    Capsule().fill(Theme.lime)
                         .matchedGeometryEffect(id: "seg", in: seg)
                 }
             }
+            .contentShape(Capsule())
+            .onTapGesture { select(value) }
+    }
+
+    private func select(_ m: CatchMode) {
+        guard selection != m else { return }
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.78)) { selection = m }
     }
 }
 

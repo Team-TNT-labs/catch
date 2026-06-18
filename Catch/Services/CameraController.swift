@@ -39,6 +39,13 @@ final class CameraController: NSObject, ObservableObject {
         }
     }
 
+    /// 앱 진입 시 권한 팝업만 띄운다(세션 시작은 안 함).
+    func ensurePermission() async {
+        if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
+            _ = await AVCaptureDevice.requestAccess(for: .video)
+        }
+    }
+
     /// 권한 상태에 따라 분기 후 세션 구성.
     func requestAccessAndConfigure() async {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
