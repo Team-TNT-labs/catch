@@ -31,12 +31,12 @@ struct SetlogBottomBar: View {
     private let modes = CatchMode.allCases
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 6) {
             ForEach(modes, id: \.self) { segment($0) }
         }
-        .padding(6)
+        .padding(8)
         .background(Capsule().fill(Color.black.opacity(0.9)))
-        .overlay(Capsule().strokeBorder(Theme.lime, lineWidth: 2))   // 테마 라임 라인
+        .overlay(Capsule().strokeBorder(Theme.lime, lineWidth: 2.5))   // 테마 라임 라인
         .background(
             GeometryReader { g in
                 Color.clear
@@ -59,9 +59,9 @@ struct SetlogBottomBar: View {
     private func segment(_ value: CatchMode) -> some View {
         let selected = selection == value
         return Image(systemName: value.icon)
-            .font(.system(size: 17, weight: .bold))
+            .font(.system(size: 21, weight: .bold))
             .foregroundStyle(selected ? .black : Theme.lime)
-            .frame(width: 52, height: 40)
+            .frame(width: 62, height: 48)
             .background {
                 if selected {
                     Capsule().fill(Theme.lime)
