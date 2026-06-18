@@ -66,8 +66,8 @@ struct CameraFlowView: View {
                     Image(systemName: "xmark")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(.white)
-                        .frame(width: 36, height: 36)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .frame(width: 40, height: 40)
+                        .liquidGlass(Circle(), interactive: true)
                 }
             }
             .padding(.horizontal, 26)
