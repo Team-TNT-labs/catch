@@ -20,7 +20,6 @@ struct MainContainerView: View {
                     pageView(.camera) {
                         CameraFlowView(
                             camera: camera,
-                            isActive: page == .camera,
                             capturing: $capturing,
                             onCatch: { c in
                                 Task { await holder.add(c) }
@@ -56,8 +55,12 @@ struct MainContainerView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: page)
         .animation(.easeInOut(duration: 0.25), value: capturing)
         .task {
-            // 진입 시 카메라 권한 팝업을 한 번 띄운다(세션은 카메라 페이지에서 시작).
-            await camera.ensurePermission()
+            // 진입 시 권한 팝업 + 세션 구성(입력 준비). 카메라 페이지 아니면 바로 정지.
+            await camera.requestAccessAndConfigure()
+            if page != .camera { camera.stopSession() }
+        }
+        .onChange(of: page) { _, p in
+            if p == .camera { camera.startSession() } else { camera.stopSession() }
         }
     }
 

@@ -3,7 +3,6 @@ import SwiftUI
 /// SETLOG 카메라 톤 — 라운드 인셋 프리뷰 + 세로 시계 + 셔터. 촬영 후 스캔 누끼 오버레이.
 struct CameraFlowView: View {
     @ObservedObject var camera: CameraController
-    var isActive: Bool
     @Binding var capturing: Bool
     var onCatch: (CloudCatch) -> Void
     var onClose: () -> Void
@@ -40,11 +39,6 @@ struct CameraFlowView: View {
             if flash { Color.white.ignoresSafeArea().transition(.opacity) }
         }
         .onChange(of: captured == nil) { _, isNil in capturing = !isNil }
-        .task(id: isActive) {
-            // 카메라 페이지가 활성일 때만 세션 구동(메인에선 정지).
-            if isActive { await camera.requestAccessAndConfigure() }
-            else { camera.stopSession() }
-        }
         .alert("안내", isPresented: Binding(
             get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }
         )) { Button("확인", role: .cancel) {} } message: { Text(errorMessage ?? "") }
