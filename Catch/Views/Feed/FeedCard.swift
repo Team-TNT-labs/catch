@@ -7,6 +7,7 @@ struct FeedCard: View {
     @State private var likeCount: Int
     @State private var hidden = false
     @State private var showReport = false
+    @State private var showDetail = false
 
     init(row: FeedRow) {
         self.row = row
@@ -25,11 +26,20 @@ struct FeedCard: View {
                     .frame(height: 300)
                     .padding(20)
                     .background(Color.black.opacity(0.35), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .contentShape(Rectangle())
+                    .onTapGesture { showDetail = true }
                 footer
             }
             .padding(16)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
             .padding(.horizontal, 16)
+            .sheet(isPresented: $showDetail) {
+                StickerDetailView(
+                    catchId: row.id, imagePath: row.imagePath, ownerId: row.ownerId,
+                    onClose: { showDetail = false }
+                )
+                .presentationBackground(.black)
+            }
         }
     }
 

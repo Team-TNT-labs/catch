@@ -9,8 +9,8 @@ final class StickerScene: SKScene {
 
     /// 스티커를 잡았는지(true)/놓았는지(false) 알린다.
     var onGrabChanged: ((Bool) -> Void)?
-    /// 길게 눌러 삭제가 확정되면 해당 캐치 id를 알린다(호스트가 서버 삭제).
-    var onDeleteCatch: ((UUID) -> Void)?
+    /// 길게 누르면 삭제를 '요청'한다(즉시 삭제 X). 호스트가 확인 후 `vanish(id:)`로 실제 삭제.
+    var onRequestDelete: ((UUID) -> Void)?
     /// 스티커를 가볍게 탭하면 해당 캐치 id를 알린다(호스트가 포커스 프리뷰).
     var onTapCatch: ((UUID) -> Void)?
 
@@ -267,7 +267,7 @@ final class StickerScene: SKScene {
         longPressTimer?.invalidate()
         longPressTimer = Timer.scheduledTimer(withTimeInterval: longPressDuration, repeats: false) { [weak self, weak node] _ in
             guard let self, let node else { return }
-            self.confirmDelete(node)
+            self.requestDelete(node)
         }
     }
 
@@ -326,17 +326,24 @@ final class StickerScene: SKScene {
         }
     }
 
-    private func confirmDelete(_ node: SKSpriteNode) {
-        // 드래그로 전환됐으면 삭제하지 않는다.
+    /// 길게 누르면 즉시 삭제하지 않고 삭제를 요청한다(호스트가 확인 다이얼로그 표시).
+    private func requestDelete(_ node: SKSpriteNode) {
+        // 드래그로 전환됐으면 무시.
         guard draggedNode === node, !dragMoved else { return }
         onGrabChanged?(false)
-
+        node.physicsBody?.isDynamic = true   // 물리 복귀(취소 대비)
+        draggedNode = nil
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         if let name = node.name, let id = UUID(uuidString: name) {
-            onDeleteCatch?(id)
+            onRequestDelete?(id)
         }
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    }
 
+    /// 삭제 확정 시: 흔들고 사라지는 연출과 함께 노드 제거.
+    func vanish(id: UUID) {
+        guard let node = childNode(withName: id.uuidString) as? SKSpriteNode else { return }
         node.physicsBody = nil
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         let wiggle = SKAction.sequence([
             .rotate(byAngle: 0.25, duration: 0.05),
             .rotate(byAngle: -0.5, duration: 0.1),
@@ -344,7 +351,6 @@ final class StickerScene: SKScene {
         ])
         let vanish = SKAction.group([.fadeOut(withDuration: 0.2), .scale(to: 0.1, duration: 0.2)])
         node.run(.sequence([wiggle, vanish, .removeFromParent()]))
-        draggedNode = nil
     }
 
     private func clampVelocity(_ v: CGVector, max maxMagnitude: CGFloat) -> CGVector {

@@ -42,6 +42,23 @@ final class FeedRepository {
         return (try? await Supa.client.rpc("following_feed_rich", params: params).execute().value) ?? []
     }
 
+    private struct LikeCountRow: Decodable { let like_count: Int }
+    private struct LikeRow: Decodable { let user_id: UUID }
+
+    /// 특정 캐치의 (내가 눌렀는지, 총 좋아요 수).
+    func likeInfo(_ catchId: UUID) async -> (liked: Bool, count: Int) {
+        let countRows: [LikeCountRow] = (try? await Supa.client
+            .from("catches").select("like_count")
+            .eq("id", value: catchId.uuidString).execute().value) ?? []
+        let count = countRows.first?.like_count ?? 0
+        guard let me = try? await Supa.client.auth.session.user.id else { return (false, count) }
+        let mine: [LikeRow] = (try? await Supa.client
+            .from("likes").select("user_id")
+            .eq("catch_id", value: catchId.uuidString)
+            .eq("user_id", value: me.uuidString).execute().value) ?? []
+        return (!mine.isEmpty, count)
+    }
+
     func like(_ catchId: UUID) async {
         guard let me = try? await Supa.client.auth.session.user.id else { return }
         _ = try? await Supa.client.from("likes")

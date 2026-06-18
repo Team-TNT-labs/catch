@@ -14,6 +14,7 @@ final class SceneHolder: ObservableObject {
     @Published private(set) var catches: [CloudCatch] = []   // 그리드 표시용(추가 순서)
     @Published var focused: CloudCatch?       // 탭한 스티커(포커스 프리뷰)
     @Published var focusedImage: UIImage?
+    @Published var pendingDeleteId: UUID?     // 꾹 눌러 삭제 요청 → 확인 대기
 
     func toggleGrid() {
         gridMode.toggle()
@@ -39,8 +40,8 @@ final class SceneHolder: ObservableObject {
         let scene = StickerScene(size: CGSize(width: 390, height: 844))
         scene.scaleMode = .resizeFill
         self.scene = scene
-        scene.onDeleteCatch = { [weak self] id in
-            Task { await self?.remove(id) }
+        scene.onRequestDelete = { [weak self] id in
+            self?.pendingDeleteId = id   // 즉시 삭제 X — 확인 다이얼로그로
         }
         scene.onGrabChanged = { [weak self] grabbing in
             self?.isGrabbing = grabbing
@@ -94,6 +95,16 @@ final class SceneHolder: ObservableObject {
         await remove(id)
     }
 
+    /// 꾹 눌러 삭제 요청을 확정(연출 후 삭제).
+    func confirmDelete() async {
+        guard let id = pendingDeleteId else { return }
+        pendingDeleteId = nil
+        scene.vanish(id: id)
+        await remove(id)
+    }
+
+    func cancelDelete() { pendingDeleteId = nil }
+
     private func spawn(_ c: CloudCatch) async {
         guard let display = await repo.displayImage(for: c) else { return }
         let body = await repo.bodyImage(for: c) ?? display
@@ -144,15 +155,6 @@ struct HomeView: View {
             .padding(.top, deviceSafeAreaTop + 4)
         }
         .animation(.easeInOut(duration: 0.25), value: holder.gridMode)
-        .overlay {
-            if let img = holder.focusedImage {
-                FocusedStickerView(image: img) {
-                    withAnimation(.easeInOut(duration: 0.25)) { holder.dismissFocus() }
-                }
-                .transition(.opacity)
-            }
-        }
-        .animation(.easeInOut(duration: 0.25), value: holder.focused != nil)
         .task {
             // 하단 커스텀 툴바(가운데 알약) 충돌 바디 설정 — 스티커가 바에 안 가려지게.
             holder.scene.toolbarBarrier = (width: 226, height: 72, bottomMargin: deviceSafeAreaBottom + 6)
@@ -167,6 +169,15 @@ struct HomeView: View {
                 }
             })
         }
+        .confirmationDialog(
+            "이 스티커를 삭제할까요?",
+            isPresented: Binding(get: { holder.pendingDeleteId != nil },
+                                 set: { if !$0 { holder.cancelDelete() } }),
+            titleVisibility: .visible
+        ) {
+            Button("삭제", role: .destructive) { Task { await holder.confirmDelete() } }
+            Button("취소", role: .cancel) { holder.cancelDelete() }
+        }
     }
 
     /// 그리드 보기 — 고정 크기 셀의 스크롤 격자(탭→포커스, 길게눌러 삭제).
@@ -175,11 +186,11 @@ struct HomeView: View {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 14)], spacing: 14) {
                 ForEach(holder.catches) { c in
                     Button { Task { await holder.focus(c.id) } } label: {
-                        CachedCatchImage(path: c.imagePath)
+                        BorderedStickerImage(path: c.imagePath)
                             .padding(10)
                             .frame(height: 116)
                             .frame(maxWidth: .infinity)
-                            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .contextMenu {

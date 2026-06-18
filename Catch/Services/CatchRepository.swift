@@ -166,6 +166,30 @@ final class CatchRepository {
         for p in paths { try? fm.removeItem(at: cacheURL(p)) }
     }
 
+    // MARK: - Caption(title)
+    private struct TitleUpdate: Encodable { let title: String? }
+    private struct TitleRow: Decodable { let title: String? }
+
+    /// 캡션 저장(로컬 즉시 반영 + 서버). 빈 문자열이면 nil로.
+    func setTitle(_ catchId: UUID, _ title: String?) async {
+        let value = (title?.isEmpty == true) ? nil : title
+        var l = loadLocal()
+        if let i = l.firstIndex(where: { $0.cloud.id == catchId }) {
+            l[i].cloud.title = value
+            saveLocal(l)
+        }
+        _ = try? await Supa.client.from("catches")
+            .update(TitleUpdate(title: value)).eq("id", value: catchId.uuidString).execute()
+    }
+
+    /// 서버의 최신 캡션(다른 사용자 캐치 표시용).
+    func title(for catchId: UUID) async -> String? {
+        let rows: [TitleRow] = (try? await Supa.client
+            .from("catches").select("title")
+            .eq("id", value: catchId.uuidString).execute().value) ?? []
+        return rows.first?.title ?? nil
+    }
+
     /// 폴더 배정(로컬 즉시 반영).
     func setFolder(_ catchId: UUID, folderId: UUID?) {
         var l = loadLocal()

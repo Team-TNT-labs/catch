@@ -70,6 +70,18 @@ struct MainContainerView: View {
             if flow.flash { Color.white.ignoresSafeArea() }
         }
         .animation(.easeInOut(duration: 0.2), value: flow.captured != nil)
+        // 스티커 상세 — 시트 대신 컨테이너 오버레이(하단 바까지 덮음). 스프링으로 팝업.
+        .overlay {
+            if let c = holder.focused {
+                StickerDetailView(
+                    catchId: c.id, imagePath: c.imagePath, ownerId: c.ownerId,
+                    initialTitle: c.title, preloaded: holder.focusedImage,
+                    onClose: { holder.dismissFocus() }
+                )
+                .transition(.scale(scale: 0.9, anchor: .center).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(response: 0.42, dampingFraction: 0.82), value: holder.focused != nil)
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: page)
         .animation(.easeInOut(duration: 0.25), value: capturing)
         .alert("안내", isPresented: Binding(
