@@ -18,6 +18,15 @@ final class AuthService: ObservableObject {
     private let apple = AppleSignInCoordinator()
 
     init() {
+        // 동기적으로 즉시 결정 — 스플래시/무한로딩 없음.
+        if Supa.client.auth.currentSession != nil {
+            let cached = Self.cachedProfile()
+            profile = cached
+            // 로그인돼 있으면 기본 진입. 캐시가 'username 없음'을 명시할 때만 온보딩.
+            state = (cached != nil && !(cached!.hasUsername)) ? .needsUsername : .ready
+        } else {
+            state = .signedOut
+        }
         Task { await restore() }
     }
 
@@ -35,18 +44,11 @@ final class AuthService: ObservableObject {
     }
 
     func restore() async {
-        // 로컬 세션(네트워크 리프레시 없음) — 무한로딩 방지
         guard let session = Supa.client.auth.currentSession else {
             state = .signedOut
             return
         }
-        // 캐시 프로필로 즉시 통과
-        if let cached = Self.cachedProfile() {
-            profile = cached
-            state = cached.hasUsername ? .ready : .needsUsername
-        }
-        // 백그라운드 갱신(없으면 여기서 상태 확정)
-        await loadProfile(userId: session.user.id)
+        await loadProfile(userId: session.user.id)   // 백그라운드 갱신
     }
 
     func signInWithApple() async {
@@ -73,8 +75,8 @@ final class AuthService: ObservableObject {
             Self.cache(p)
             state = p.hasUsername ? .ready : .needsUsername
         } catch {
-            // 네트워크 실패: 캐시가 있으면 그 상태 유지, 없으면 온보딩
-            if profile == nil { state = .needsUsername }
+            // 네트워크 실패: 이미 들어가 있으면(.ready) 유지, 아니면 온보딩
+            if state != .ready { state = .needsUsername }
         }
     }
 

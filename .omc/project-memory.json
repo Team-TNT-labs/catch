@@ -129,21 +129,27 @@
       "type": "file"
     },
     {
+      "path": "Catch/Views/CameraFlowView.swift",
+      "accessCount": 14,
+      "lastAccessed": 1781772637230,
+      "type": "file"
+    },
+    {
       "path": "Catch/Physics/StickerScene.swift",
       "accessCount": 12,
       "lastAccessed": 1781771453313,
       "type": "file"
     },
     {
-      "path": "Catch/Views/CameraFlowView.swift",
-      "accessCount": 12,
-      "lastAccessed": 1781772306890,
+      "path": "Catch/App/MainContainerView.swift",
+      "accessCount": 11,
+      "lastAccessed": 1781772683890,
       "type": "file"
     },
     {
-      "path": "Catch/App/MainContainerView.swift",
-      "accessCount": 8,
-      "lastAccessed": 1781772050925,
+      "path": "Catch/Services/AuthService.swift",
+      "accessCount": 9,
+      "lastAccessed": 1781772622705,
       "type": "file"
     },
     {
@@ -171,12 +177,6 @@
       "type": "file"
     },
     {
-      "path": "Catch/Services/AuthService.swift",
-      "accessCount": 6,
-      "lastAccessed": 1781772364529,
-      "type": "file"
-    },
-    {
       "path": "Catch/Views/Auth/OnboardingUsernameView.swift",
       "accessCount": 5,
       "lastAccessed": 1781756367342,
@@ -186,6 +186,12 @@
       "path": "Catch/App/RootView.swift",
       "accessCount": 5,
       "lastAccessed": 1781757245602,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Views/SetlogBar.swift",
+      "accessCount": 5,
+      "lastAccessed": 1781772649617,
       "type": "file"
     },
     {
@@ -210,12 +216,6 @@
       "path": "Catch/Services/CameraController.swift",
       "accessCount": 4,
       "lastAccessed": 1781757124358,
-      "type": "file"
-    },
-    {
-      "path": "Catch/Views/SetlogBar.swift",
-      "accessCount": 4,
-      "lastAccessed": 1781771520268,
       "type": "file"
     },
     {

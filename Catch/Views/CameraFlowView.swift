@@ -54,16 +54,6 @@ struct CameraFlowView: View {
                     .padding(.bottom, 130)
                     .padding(.top, 4)
 
-                // 세로 시계
-                Text(timeString)
-                    .font(.system(size: 40, weight: .heavy))
-                    .foregroundStyle(.white)
-                    .rotationEffect(.degrees(-90))
-                    .fixedSize()
-                    .frame(width: 40)
-                    .position(x: 38, y: geo.size.height * 0.45)
-                    .shadow(color: .black.opacity(0.4), radius: 6)
-
                 // X 닫기
                 HStack {
                     Spacer()
@@ -107,10 +97,6 @@ struct CameraFlowView: View {
             }
         }
         .ignoresSafeArea(edges: .top)
-    }
-
-    private var timeString: String {
-        let f = DateFormatter(); f.dateFormat = "HH:mm"; return f.string(from: Date())
     }
 
     private var deniedView: some View {

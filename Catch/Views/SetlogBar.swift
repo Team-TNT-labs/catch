@@ -12,22 +12,14 @@ enum CatchMode: String, CaseIterable {
     }
 }
 
-/// SETLOG 하단 바 — [둥근버튼] [ camera | jar | friends 세그먼트 ] [둥근버튼]
+/// SETLOG 하단 바 — [ camera | jar | profile 세그먼트 ]만.
 struct SetlogBottomBar: View {
     @Binding var mode: CatchMode
-    var leftIcon: String = "gearshape.fill"
-    var rightIcon: String
-    var onLeft: () -> Void
-    var onRight: () -> Void
 
     @Namespace private var seg
 
     var body: some View {
-        HStack(spacing: 10) {
-            RoundBarButton(icon: leftIcon, action: onLeft)
-            segmented
-            RoundBarButton(icon: rightIcon, action: onRight)
-        }
+        segmented
     }
 
     private var segmented: some View {

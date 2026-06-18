@@ -8,8 +8,6 @@ struct MainContainerView: View {
 
     @State private var mode: CatchMode = .jar
     @State private var capturing = false
-    @State private var showSettings = false
-    @State private var showSearch = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -40,7 +38,8 @@ struct MainContainerView: View {
             }
             .scrollTargetBehavior(.paging)
             .scrollPosition(id: Binding(get: { mode }, set: { if let v = $0 { mode = v } }))
-            .scrollDisabled(holder.isGrabbing || capturing)
+            // jar에선 스와이프 잠금(스티커 드래그 보호). 이동은 세그먼트 탭으로.
+            .scrollDisabled(mode == .jar || holder.isGrabbing || capturing)
             .scrollIndicators(.hidden)
             .ignoresSafeArea()
             .onChange(of: mode) { _, m in
@@ -48,22 +47,15 @@ struct MainContainerView: View {
                 else { camera.stopSession() }
             }
 
-            // 하단 Liquid Glass 바
+            // 하단 Liquid Glass 세그먼트
             if !capturing {
-                SetlogBottomBar(
-                    mode: $mode,
-                    rightIcon: "magnifyingglass",
-                    onLeft: { showSettings = true },
-                    onRight: { showSearch = true }
-                )
-                .padding(.bottom, 6)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                SetlogBottomBar(mode: $mode)
+                    .padding(.bottom, 6)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: mode)
         .animation(.easeInOut(duration: 0.25), value: capturing)
-        .sheet(isPresented: $showSettings) { SettingsView().environmentObject(auth) }
-        .sheet(isPresented: $showSearch) { UserSearchView() }
     }
 
     /// 한 페이지를 부드러운 스크롤 트랜지션(살짝 페이드+스케일)으로 감싼다.
