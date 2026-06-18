@@ -44,8 +44,15 @@ struct MainContainerView: View {
             .scrollIndicators(.hidden)
             .ignoresSafeArea()
             .onChange(of: mode) { _, m in
-                if m == .camera { Task { await camera.requestAccessAndConfigure() } }
-                else { camera.stopSession() }
+                if m == .camera {
+                    // 전환 애니메이션이 끝난 뒤 시작 — 검정 먼저 뜨고 로딩(첫 진입 렉 방지)
+                    Task {
+                        try? await Task.sleep(nanoseconds: 280_000_000)
+                        if mode == .camera { await camera.requestAccessAndConfigure() }
+                    }
+                } else {
+                    camera.stopSession()
+                }
             }
 
             // 하단 Liquid Glass 세그먼트

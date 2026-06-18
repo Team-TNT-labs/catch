@@ -59,20 +59,6 @@ struct CameraFlowView: View {
                 .padding(.top, deviceSafeAreaTop)   // 노치/다이나믹아일랜드 아래로
                 .padding(.bottom, 118)
 
-            // X 닫기
-            HStack {
-                Spacer()
-                Button { onClose() } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 40, height: 40)
-                        .liquidGlass(Circle(), interactive: true)
-                }
-            }
-            .padding(.horizontal, 26)
-            .padding(.top, deviceSafeAreaTop + 8)
-
             // 셔터 + 우측 전/후면 플립
             VStack {
                 Spacer()
