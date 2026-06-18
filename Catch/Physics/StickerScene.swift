@@ -22,6 +22,9 @@ final class StickerScene: SKScene {
     }
     private var barrierNode: SKNode?
 
+    /// 그리드 정렬 모드(중력 off, 터치 비활성).
+    private(set) var isGrid = false
+
     // 드래그 상태
     private var draggedNode: SKSpriteNode?
     private var dragStartPoint: CGPoint = .zero
@@ -176,15 +179,72 @@ final class StickerScene: SKScene {
     // MARK: - Shake
 
     func shuffle() {
+        guard !isGrid else { return }
         for case let node as SKSpriteNode in children where node.physicsBody != nil {
             node.physicsBody?.applyImpulse(CGVector(dx: .random(in: -40...40), dy: .random(in: 20...90)))
             node.physicsBody?.applyAngularImpulse(.random(in: -0.05...0.05))
         }
     }
 
+    // MARK: - 그리드 정렬 / 중력 해제
+
+    private var stickerNodes: [SKSpriteNode] {
+        children.compactMap { $0 as? SKSpriteNode }
+            .filter { ($0.name.flatMap { UUID(uuidString: $0) }) != nil }
+    }
+
+    /// 깔끔한 그리드로 정렬(중력 off).
+    func arrangeGrid() {
+        isGrid = true
+        let nodes = stickerNodes
+        let n = nodes.count
+        guard n > 0, size.width > 1 else { return }
+
+        let cols = max(2, min(4, Int(size.width / 150)))
+        let rows = Int(ceil(Double(n) / Double(cols)))
+        let topInset = deviceSafeAreaTop + 116
+        let bottomInsetV = deviceSafeAreaBottom + 96
+        let usableH = max(120, size.height - topInset - bottomInsetV)
+        let cellW = size.width / CGFloat(cols)
+        let cellH = min(cellW, usableH / CGFloat(max(1, rows)))
+        let cell = min(cellW, cellH)
+        let startX = cellW / 2
+        let startY = size.height - topInset - cellH / 2
+
+        for (i, node) in nodes.enumerated() {
+            node.physicsBody?.isDynamic = false
+            node.physicsBody?.velocity = .zero
+            node.physicsBody?.angularVelocity = 0
+            let c = i % cols, r = i / cols
+            let x = startX + CGFloat(c) * cellW
+            let y = startY - CGFloat(r) * cellH
+            let longest = max(node.size.width, node.size.height)
+            let target = longest > 0 ? (cell * 0.82) / longest : 1
+            let action = SKAction.group([
+                .move(to: CGPoint(x: x, y: y), duration: 0.4),
+                .scale(to: target, duration: 0.4),
+                .rotate(toAngle: 0, duration: 0.4, shortestUnitArc: true)
+            ])
+            action.timingMode = .easeInEaseOut
+            node.run(action)
+        }
+    }
+
+    /// 그리드 해제 → 다시 중력으로 떨어뜨림.
+    func releaseGrid() {
+        isGrid = false
+        for node in stickerNodes {
+            node.run(.scale(to: 1.0, duration: 0.25))
+            node.physicsBody?.isDynamic = true
+            node.physicsBody?.applyImpulse(CGVector(dx: .random(in: -25...25), dy: .random(in: -10...20)))
+            node.physicsBody?.applyAngularImpulse(.random(in: -0.03...0.03))
+        }
+    }
+
     // MARK: - Touch: drag / throw / long-press delete
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard !isGrid else { return }   // 그리드 모드에선 터치 비활성
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
         guard let node = nodes(at: location).first(where: { $0.physicsBody != nil }) as? SKSpriteNode else { return }

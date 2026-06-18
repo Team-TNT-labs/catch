@@ -158,6 +158,12 @@
       "type": "file"
     },
     {
+      "path": "Catch/Physics/StickerScene.swift",
+      "accessCount": 10,
+      "lastAccessed": 1781777612628,
+      "type": "file"
+    },
+    {
       "path": "Catch/App/MainContainerView.swift",
       "accessCount": 9,
       "lastAccessed": 1781777016403,
@@ -170,21 +176,15 @@
       "type": "file"
     },
     {
-      "path": "Catch/Physics/StickerScene.swift",
-      "accessCount": 6,
-      "lastAccessed": 1781777300975,
+      "path": "Catch/Views/HomeView.swift",
+      "accessCount": 5,
+      "lastAccessed": 1781777627025,
       "type": "file"
     },
     {
       "path": "Catch/Views/CameraView.swift",
       "accessCount": 3,
       "lastAccessed": 1781776524801,
-      "type": "file"
-    },
-    {
-      "path": "Catch/Views/HomeView.swift",
-      "accessCount": 3,
-      "lastAccessed": 1781777313786,
       "type": "file"
     },
     {

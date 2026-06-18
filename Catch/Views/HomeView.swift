@@ -10,6 +10,12 @@ final class SceneHolder: ObservableObject {
     @Published var isLoading = false
     @Published var isEmpty = false
     @Published var isGrabbing = false   // 스티커 드래그 중 → 페이지 스와이프 잠금
+    @Published var gridMode = false     // 그리드 정렬 ↔ 중력
+
+    func toggleGrid() {
+        gridMode.toggle()
+        if gridMode { scene.arrangeGrid() } else { scene.releaseGrid() }
+    }
 
     private var byId: [UUID: CloudCatch] = [:]
     private var loadedOnce = false
@@ -141,14 +147,25 @@ struct HomeView: View {
                 Text("catch").font(.system(size: 24, weight: .heavy)).foregroundStyle(Theme.lime)
             }
             Spacer()
-            Menu {
-                Button { showFolders = true } label: { Label("폴더 관리", systemImage: "folder") }
-            } label: {
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-                    .liquidGlass(Circle(), interactive: true)
+            HStack(spacing: 10) {
+                // 뷰 옵션 — 중력 ↔ 그리드 정렬
+                Button { holder.toggleGrid() } label: {
+                    Image(systemName: holder.gridMode ? "circle.grid.3x3.fill" : "square.grid.2x2")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .liquidGlass(Circle(), interactive: true)
+                }
+                // 메뉴
+                Menu {
+                    Button { showFolders = true } label: { Label("폴더 관리", systemImage: "folder") }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .liquidGlass(Circle(), interactive: true)
+                }
             }
         }
         .padding(.horizontal, 18)
