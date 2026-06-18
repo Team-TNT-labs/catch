@@ -32,6 +32,13 @@ extension Font {
     }
 }
 
+/// 키윈도우 기준 상단 안전영역 inset (ignoresSafeArea 컨텍스트에서도 정확).
+var deviceSafeAreaTop: CGFloat {
+    UIApplication.shared.connectedScenes
+        .compactMap { $0 as? UIWindowScene }.first?
+        .keyWindow?.safeAreaInsets.top ?? 47
+}
+
 extension View {
     /// Liquid Glass (iOS 26+) — 하위 버전은 ultraThinMaterial 폴백.
     @ViewBuilder

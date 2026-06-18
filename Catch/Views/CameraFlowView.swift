@@ -163,8 +163,12 @@ struct CameraFlowView: View {
             // 로컬에 즉시 저장 → 바로 항아리로(업로드는 백그라운드)
             let cloud = try? await repo.capture(image: image)
             saving = false
-            if let cloud { onCatch(cloud) }
-            else { errorMessage = "저장에 실패했어요." }
+            if let cloud {
+                resetToCamera()   // captured/cutout 비워 capturing=false → 하단 바 복귀
+                onCatch(cloud)
+            } else {
+                errorMessage = "저장에 실패했어요."
+            }
         }
     }
 }

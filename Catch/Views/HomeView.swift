@@ -105,7 +105,7 @@ struct HomeView: View {
                 topBar
                 folderBar
             }
-            .padding(.top, 8)
+            .padding(.top, deviceSafeAreaTop + 4)
         }
         .task {
             await holder.loadMineIfNeeded()

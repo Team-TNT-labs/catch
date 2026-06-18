@@ -21,13 +21,32 @@ final class AuthService: ObservableObject {
         Task { await restore() }
     }
 
-    func restore() async {
-        do {
-            let session = try await Supa.client.auth.session
-            await loadProfile(userId: session.user.id)
-        } catch {
-            state = .signedOut
+    private static let cacheKey = "cached_profile"
+    static func cachedProfile() -> Profile? {
+        guard let data = UserDefaults.standard.data(forKey: cacheKey) else { return nil }
+        return try? JSONDecoder().decode(Profile.self, from: data)
+    }
+    static func cache(_ p: Profile?) {
+        if let p, let data = try? JSONEncoder().encode(p) {
+            UserDefaults.standard.set(data, forKey: cacheKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: cacheKey)
         }
+    }
+
+    func restore() async {
+        // 로컬 세션(네트워크 리프레시 없음) — 무한로딩 방지
+        guard let session = Supa.client.auth.currentSession else {
+            state = .signedOut
+            return
+        }
+        // 캐시 프로필로 즉시 통과
+        if let cached = Self.cachedProfile() {
+            profile = cached
+            state = cached.hasUsername ? .ready : .needsUsername
+        }
+        // 백그라운드 갱신(없으면 여기서 상태 확정)
+        await loadProfile(userId: session.user.id)
     }
 
     func signInWithApple() async {
@@ -51,10 +70,11 @@ final class AuthService: ObservableObject {
                 .from("profiles").select().eq("id", value: userId).single()
                 .execute().value
             profile = p
+            Self.cache(p)
             state = p.hasUsername ? .ready : .needsUsername
         } catch {
-            // 트리거 지연 등으로 행이 아직 없으면 온보딩으로
-            state = .needsUsername
+            // 네트워크 실패: 캐시가 있으면 그 상태 유지, 없으면 온보딩
+            if profile == nil { state = .needsUsername }
         }
     }
 
@@ -86,6 +106,7 @@ final class AuthService: ObservableObject {
 
     func signOut() async {
         try? await Supa.client.auth.signOut()
+        Self.cache(nil)
         profile = nil
         state = .signedOut
     }
