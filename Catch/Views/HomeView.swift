@@ -11,10 +11,24 @@ final class SceneHolder: ObservableObject {
     @Published var isEmpty = false
     @Published var isGrabbing = false   // 스티커 드래그 중 → 페이지 스와이프 잠금
     @Published var gridMode = false     // 그리드 정렬 ↔ 중력
+    @Published var focused: CloudCatch?       // 탭한 스티커(포커스 프리뷰)
+    @Published var focusedImage: UIImage?
 
     func toggleGrid() {
         gridMode.toggle()
         if gridMode { scene.arrangeGrid() } else { scene.releaseGrid() }
+    }
+
+    func focus(_ id: UUID) async {
+        guard let c = byId[id] else { return }
+        let img = await repo.displayImage(for: c)
+        focusedImage = img
+        focused = c
+    }
+
+    func dismissFocus() {
+        focused = nil
+        focusedImage = nil
     }
 
     private var byId: [UUID: CloudCatch] = [:]
@@ -29,6 +43,9 @@ final class SceneHolder: ObservableObject {
         }
         scene.onGrabChanged = { [weak self] grabbing in
             self?.isGrabbing = grabbing
+        }
+        scene.onTapCatch = { [weak self] id in
+            Task { await self?.focus(id) }
         }
     }
 
@@ -105,6 +122,15 @@ struct HomeView: View {
             }
             .padding(.top, deviceSafeAreaTop + 4)
         }
+        .overlay {
+            if let img = holder.focusedImage {
+                FocusedStickerView(image: img) {
+                    withAnimation(.easeInOut(duration: 0.25)) { holder.dismissFocus() }
+                }
+                .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: holder.focused != nil)
         .task {
             // 하단 커스텀 툴바(가운데 알약) 충돌 바디 설정 — 스티커가 바에 안 가려지게.
             holder.scene.toolbarBarrier = (width: 226, height: 72, bottomMargin: deviceSafeAreaBottom + 6)
@@ -181,4 +207,44 @@ struct HomeView: View {
         }
     }
 
+}
+
+/// 탭한 스티커를 블러 배경 위에 중앙·확대로 화려하게.
+struct FocusedStickerView: View {
+    let image: UIImage
+    var onDismiss: () -> Void
+    @State private var appear = false
+
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .ignoresSafeArea()
+                .opacity(appear ? 1 : 0)
+
+            // 화려한 라임 글로우
+            Circle()
+                .fill(RadialGradient(colors: [Theme.lime.opacity(0.55), .clear],
+                                     center: .center, startRadius: 8, endRadius: 280))
+                .frame(width: 560, height: 560)
+                .blur(radius: 36)
+                .scaleEffect(appear ? 1 : 0.5)
+                .opacity(appear ? 1 : 0)
+
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 300, maxHeight: 380)
+                .shadow(color: Theme.lime.opacity(0.6), radius: 26)
+                .shadow(color: .black.opacity(0.45), radius: 14, y: 10)
+                .scaleEffect(appear ? 1.12 : 0.6)
+                .rotationEffect(.degrees(appear ? 0 : -8))
+                .opacity(appear ? 1 : 0)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { onDismiss() }
+        .onAppear {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) { appear = true }
+        }
+    }
 }

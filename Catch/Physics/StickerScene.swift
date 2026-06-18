@@ -11,6 +11,8 @@ final class StickerScene: SKScene {
     var onGrabChanged: ((Bool) -> Void)?
     /// 길게 눌러 삭제가 확정되면 해당 캐치 id를 알린다(호스트가 서버 삭제).
     var onDeleteCatch: ((UUID) -> Void)?
+    /// 스티커를 가볍게 탭하면 해당 캐치 id를 알린다(호스트가 포커스 프리뷰).
+    var onTapCatch: ((UUID) -> Void)?
 
     private let displayMaxDimension: CGFloat = 140
     static let rimColor = UIColor(hex: 0xE3FB85)   // 테마 라임
@@ -30,6 +32,7 @@ final class StickerScene: SKScene {
     private var dragStartPoint: CGPoint = .zero
     private var lastDragPoint: CGPoint = .zero
     private var lastDragTime: TimeInterval = 0
+    private var dragStartTime: TimeInterval = 0
     private var dragVelocity: CGVector = .zero
     private var dragMoved = false
 
@@ -244,7 +247,6 @@ final class StickerScene: SKScene {
     // MARK: - Touch: drag / throw / long-press delete
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard !isGrid else { return }   // 그리드 모드에선 터치 비활성
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
         guard let node = nodes(at: location).first(where: { $0.physicsBody != nil }) as? SKSpriteNode else { return }
@@ -253,8 +255,12 @@ final class StickerScene: SKScene {
         dragStartPoint = location
         lastDragPoint = location
         lastDragTime = CACurrentMediaTime()
+        dragStartTime = CACurrentMediaTime()
         dragVelocity = .zero
         dragMoved = false
+
+        guard !isGrid else { return }   // 그리드: 탭만 감지(드래그/삭제 없음)
+
         node.physicsBody?.isDynamic = false   // 드래그 중 물리 분리(desync 방지)
         onGrabChanged?(true)                  // 잡는 동안 페이지 스크롤 잠금
 
@@ -267,6 +273,12 @@ final class StickerScene: SKScene {
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first, let node = draggedNode else { return }
+        guard !isGrid else {
+            // 그리드: 임계값 넘으면 탭 취소만
+            if hypot(touch.location(in: self).x - dragStartPoint.x,
+                     touch.location(in: self).y - dragStartPoint.y) > dragThreshold { dragMoved = true }
+            return
+        }
         let location = touch.location(in: self)
 
         if hypot(location.x - dragStartPoint.x, location.y - dragStartPoint.y) > dragThreshold {
@@ -295,13 +307,23 @@ final class StickerScene: SKScene {
     private func finishDrag() {
         longPressTimer?.invalidate()
         longPressTimer = nil
-        defer { onGrabChanged?(false) }
         guard let node = draggedNode else { return }
-        node.physicsBody?.isDynamic = true
-        if dragMoved {
-            node.physicsBody?.velocity = clampVelocity(dragVelocity, max: 1500)
-        }
         draggedNode = nil
+
+        let duration = CACurrentMediaTime() - dragStartTime
+        let isTap = !dragMoved && duration < longPressDuration
+
+        if !isGrid {
+            onGrabChanged?(false)
+            node.physicsBody?.isDynamic = true
+            if dragMoved {
+                node.physicsBody?.velocity = clampVelocity(dragVelocity, max: 1500)
+            }
+        }
+
+        if isTap, let name = node.name, let id = UUID(uuidString: name) {
+            onTapCatch?(id)
+        }
     }
 
     private func confirmDelete(_ node: SKSpriteNode) {
