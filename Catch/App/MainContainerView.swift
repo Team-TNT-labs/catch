@@ -89,11 +89,16 @@ struct MainContainerView: View {
         )) { Button("확인", role: .cancel) {} } message: { Text(flow.errorMessage ?? "") }
         // 폴더 편집 시트 — 컨테이너 레벨(페이저 자식은 holder 변경에 재렌더 불안정).
         .sheet(item: $holder.folderToEdit) { folder in
+            let isNew = holder.isCreating(folder)
             FolderEditView(
                 folder: folder,
-                onSave: { name, shape, color in
+                isNew: isNew,
+                onSave: { name, shape, color, labelColor in
                     holder.folderToEdit = nil
-                    Task { await holder.updateFolder(folder.id, name: name, shape: shape, color: color) }
+                    Task {
+                        if isNew { await holder.createFolder(name: name, shape: shape, color: color, labelColor: labelColor) }
+                        else { await holder.updateFolder(folder.id, name: name, shape: shape, color: color, labelColor: labelColor) }
+                    }
                 },
                 onDelete: { Task { await holder.deleteFolder(folder.id) } },
                 onClose: { holder.folderToEdit = nil }

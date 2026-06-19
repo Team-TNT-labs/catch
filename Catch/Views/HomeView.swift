@@ -29,7 +29,10 @@ final class SceneHolder: ObservableObject {
     @Published var pendingDeleteId: UUID?     // 꾹 눌러 삭제 요청 → 확인 대기
     @Published var folders: [Folder] = []     // 내 폴더(루트에서 모양 노드로 표시)
     @Published var currentFolder: Folder?     // nil = 루트(미분류 + 폴더들)
-    @Published var folderToEdit: Folder?      // 꾹 눌러 편집 시트
+    @Published var folderToEdit: Folder?      // 꾹 눌러 편집 / + 새 폴더 시트
+    private(set) var creatingFolderId: UUID?  // folderToEdit가 새 폴더면 그 임시 id
+
+    func isCreating(_ folder: Folder) -> Bool { creatingFolderId == folder.id }
     @Published var ejectHovering = false      // 폴더 안: 스티커가 뒤로가기 위에 올라옴
 
     var isGrid: Bool { mode == .grid }
@@ -118,20 +121,33 @@ final class SceneHolder: ObservableObject {
         await reload(folderId: nil)
     }
 
-    func createFolder(name: String) async {
-        guard let f = await FolderRepository.shared.create(name: name) else { return }
-        folders.append(f)
-        if currentFolder == nil { scene.addFolder(id: f.id, name: f.name, shape: f.shape, color: f.color) }
+    /// `+` → 편집과 동일한 시트를 "새 폴더"로 띄운다(아직 서버에 없는 임시 폴더).
+    func beginCreateFolder() {
+        let placeholder = Folder(id: UUID(), name: "새 폴더", isPublic: true, sort: 0,
+                                 shape: 0, color: 0, labelColor: 0)
+        creatingFolderId = placeholder.id
+        folderToEdit = placeholder
     }
 
-    func updateFolder(_ id: UUID, name: String, shape: Int?, color: Int?) async {
+    /// 새 폴더 생성(모양/색/레이블 포함).
+    func createFolder(name: String, shape: Int?, color: Int?, labelColor: Int?) async {
+        guard let f0 = await FolderRepository.shared.create(name: name) else { return }
+        await FolderRepository.shared.update(f0.id, name: name, shape: shape, color: color, labelColor: labelColor)
+        var f = f0; f.shape = shape; f.color = color; f.labelColor = labelColor
+        folders.append(f)
+        if currentFolder == nil {
+            scene.addFolder(id: f.id, name: name, shape: shape, color: color, labelColor: labelColor)
+        }
+    }
+
+    func updateFolder(_ id: UUID, name: String, shape: Int?, color: Int?, labelColor: Int?) async {
         guard let i = folders.firstIndex(where: { $0.id == id }) else { return }
-        folders[i].name = name; folders[i].shape = shape; folders[i].color = color
+        folders[i].name = name; folders[i].shape = shape; folders[i].color = color; folders[i].labelColor = labelColor
         if currentFolder?.id == id { currentFolder = folders[i] }
-        await FolderRepository.shared.update(id, name: name, shape: shape, color: color)
+        await FolderRepository.shared.update(id, name: name, shape: shape, color: color, labelColor: labelColor)
         if currentFolder == nil {   // 루트 노드 갱신(새 모양/색/이름)
             scene.removeFolderNode(id: id)
-            scene.addFolder(id: id, name: name, shape: shape, color: color)
+            scene.addFolder(id: id, name: name, shape: shape, color: color, labelColor: labelColor)
         }
     }
 
@@ -166,7 +182,7 @@ final class SceneHolder: ObservableObject {
         // 루트면 폴더들을 모양 노드로 먼저 투하.
         if folderId == nil {
             for f in folders {
-                scene.addFolder(id: f.id, name: f.name, shape: f.shape, color: f.color)
+                scene.addFolder(id: f.id, name: f.name, shape: f.shape, color: f.color, labelColor: f.labelColor)
                 try? await Task.sleep(nanoseconds: 45_000_000)
             }
         }
@@ -237,9 +253,6 @@ struct HomeView: View {
     @EnvironmentObject private var auth: AuthService
     @ObservedObject var holder: SceneHolder
 
-    @State private var showAddFolder = false
-    @State private var newFolderName = ""
-
     var body: some View {
         ZStack(alignment: .top) {
             SpriteView(scene: holder.scene, options: [.ignoresSiblingOrder])
@@ -264,12 +277,7 @@ struct HomeView: View {
             holder.scene.toolbarBarrier = (width: 226, height: 72, bottomMargin: deviceSafeAreaBottom + 6)
             await holder.loadMineIfNeeded()
         }
-        .alert("새 폴더", isPresented: $showAddFolder) {
-            TextField("폴더 이름", text: $newFolderName)
-            Button("취소", role: .cancel) {}
-            Button("추가") { addFolder() }
-        }
-        // 삭제 확인 다이얼로그는 컨테이너(MainContainerView)에서.
+        // 폴더 추가/편집 시트·삭제 확인은 컨테이너(MainContainerView)에서.
     }
 
     /// 그리드 보기 — 고정 크기 셀의 스크롤 격자(탭→포커스, 길게눌러 삭제).
@@ -333,9 +341,9 @@ struct HomeView: View {
                             .font(.system(size: 18, weight: .semibold)).foregroundStyle(.white)
                             .frame(width: 44, height: 44).liquidGlass(Circle(), interactive: true)
                     }
-                    // 폴더 추가 — 루트에서만
+                    // 폴더 추가 — 루트에서만(편집과 동일한 화면, "새 폴더")
                     if holder.currentFolder == nil {
-                        Button { newFolderName = ""; showAddFolder = true } label: {
+                        Button { holder.beginCreateFolder() } label: {
                             Image(systemName: "plus")
                                 .font(.system(size: 18, weight: .semibold)).foregroundStyle(.white)
                                 .frame(width: 44, height: 44).liquidGlass(Circle(), interactive: true)
@@ -345,12 +353,6 @@ struct HomeView: View {
             }
         }
         .padding(.horizontal, 18)
-    }
-
-    private func addFolder() {
-        let name = newFolderName.trimmingCharacters(in: .whitespaces)
-        guard !name.isEmpty else { return }
-        Task { await holder.createFolder(name: name) }
     }
 }
 

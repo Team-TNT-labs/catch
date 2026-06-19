@@ -28,10 +28,12 @@ final class FolderRepository {
             .eq("id", value: id.uuidString).execute()
     }
 
-    private struct StyleUpdate: Encodable { let name: String; let shape: Int?; let color: Int? }
-    func update(_ id: UUID, name: String, shape: Int?, color: Int?) async {
+    private struct StyleUpdate: Encodable {
+        let name: String; let shape: Int?; let color: Int?; let label_color: Int?
+    }
+    func update(_ id: UUID, name: String, shape: Int?, color: Int?, labelColor: Int?) async {
         _ = try? await Supa.client.from("folders")
-            .update(StyleUpdate(name: name, shape: shape, color: color))
+            .update(StyleUpdate(name: name, shape: shape, color: color, label_color: labelColor))
             .eq("id", value: id.uuidString).execute()
     }
 

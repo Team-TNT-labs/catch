@@ -2,9 +2,16 @@ import UIKit
 import SpriteKit
 import SwiftUI
 
-/// 폴더 색 팔레트(인덱스 저장). 0 = 라임(기본).
+/// 폴더 채움 색 팔레트(인덱스 저장). 0 = 라임(기본).
 enum FolderPalette {
     static let hexes: [UInt] = [0xE3FB85, 0xC4B0FF, 0xF6E58D, 0xFF9AA2, 0x9AD0FF, 0xB5EAD7, 0xFFB6E1, 0xFFD8A8]
+    static func uiColor(_ i: Int?) -> UIColor { UIColor(hex: hexes[(i ?? 0) % hexes.count]) }
+    static func color(_ i: Int?) -> Color { Color(hex: hexes[(i ?? 0) % hexes.count]) }
+}
+
+/// 폴더 레이블(글자) 색 팔레트. 0 = 검정(기본).
+enum FolderLabelPalette {
+    static let hexes: [UInt] = [0x111111, 0xFFFFFF, 0xFF6B6B, 0x4D7CFF, 0x1FB573, 0xC4B0FF]
     static func uiColor(_ i: Int?) -> UIColor { UIColor(hex: hexes[(i ?? 0) % hexes.count]) }
     static func color(_ i: Int?) -> Color { Color(hex: hexes[(i ?? 0) % hexes.count]) }
 }
@@ -25,6 +32,38 @@ enum FolderShape: CaseIterable {
     }
 
     var index: Int { Self.allCases.firstIndex(of: self) ?? 0 }
+
+    /// 베지어 패스 대신 SF Symbol로 그리는 모양(없으면 nil).
+    var systemSymbol: String? {
+        switch self {
+        case .heart: return "heart.fill"
+        default:     return nil
+        }
+    }
+
+    /// SF Symbol을 color로 채우고 흰 테두리(외곽 디테이션)를 둘러 rect에 aspect-fit으로 그린다.
+    private static func drawSymbol(_ name: String, in rect: CGRect, fill: UIColor, border: CGFloat) {
+        let cfg = UIImage.SymbolConfiguration(pointSize: rect.width, weight: .black)
+        guard let base = UIImage(systemName: name, withConfiguration: cfg) else { return }
+        let aspect = base.size.width / max(1, base.size.height)
+        var draw = rect
+        if aspect >= 1 {
+            draw.size.height = rect.width / aspect
+            draw.origin.y += (rect.height - draw.size.height) / 2
+        } else {
+            draw.size.width = rect.height * aspect
+            draw.origin.x += (rect.width - draw.size.width) / 2
+        }
+        // 글리프 자체 여백 보정 — 다른 모양과 비슷하게 보이도록 살짝 키운다.
+        draw = draw.insetBy(dx: -draw.width * 0.1, dy: -draw.height * 0.1)
+        let white = base.withTintColor(.white, renderingMode: .alwaysOriginal)
+        let colored = base.withTintColor(fill, renderingMode: .alwaysOriginal)
+        for i in 0..<18 {
+            let a = CGFloat(i) / 18 * 2 * .pi
+            white.draw(in: draw.offsetBy(dx: cos(a) * border, dy: sin(a) * border))
+        }
+        colored.draw(in: draw)
+    }
 
     /// 글자가 모양을 뚫지 않도록 모양 내부의 안전 텍스트 박스(정규화 0~1: x중심폭, y중심).
     /// (widthFactor, centerY) — 모양이 가장 넓은 지점에 텍스트를 둔다.
@@ -51,7 +90,7 @@ enum FolderShape: CaseIterable {
             p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
             p.addLine(to: CGPoint(x: r.minX, y: r.maxY))
             p.close(); return p
-        case .star:    return Self.star(in: r, points: 5, inner: 0.46)
+        case .star:    return Self.star(in: r.insetBy(dx: -r.width * 0.08, dy: -r.height * 0.08), points: 5, inner: 0.46)
         case .hexagon: return Self.polygon(in: r, sides: 6, rotation: .pi / 6)
         case .heart:   return Self.heart(in: r)
         }
@@ -87,28 +126,37 @@ enum FolderShape: CaseIterable {
         func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
             CGPoint(x: r.minX + x * r.width, y: r.minY + y * r.height)
         }
-        // 자기교차 없는 단일 닫힌 루프(4 커브).
+        // 둥근 로브 + 우아한 끝점의 클래식 하트(자기교차 없는 단일 루프).
         let p = UIBezierPath()
-        p.move(to: pt(0.5, 0.27))
-        p.addCurve(to: pt(0.0, 0.27), controlPoint1: pt(0.42, 0.03), controlPoint2: pt(0.0, 0.03))
-        p.addCurve(to: pt(0.5, 1.0),  controlPoint1: pt(0.0, 0.56), controlPoint2: pt(0.5, 0.72))
-        p.addCurve(to: pt(1.0, 0.27), controlPoint1: pt(0.5, 0.72), controlPoint2: pt(1.0, 0.56))
-        p.addCurve(to: pt(0.5, 0.27), controlPoint1: pt(1.0, 0.03), controlPoint2: pt(0.58, 0.03))
+        p.move(to: pt(0.5, 0.95))                                          // 아래 끝점
+        p.addCurve(to: pt(0.02, 0.32),                                     // 왼쪽으로 올라감
+                   controlPoint1: pt(0.34, 0.74), controlPoint2: pt(0.02, 0.54))
+        p.addCurve(to: pt(0.5, 0.22),                                      // 왼쪽 로브 → 가운데 패임
+                   controlPoint1: pt(0.02, 0.10), controlPoint2: pt(0.36, 0.06))
+        p.addCurve(to: pt(0.98, 0.32),                                     // 가운데 → 오른쪽 로브
+                   controlPoint1: pt(0.64, 0.06), controlPoint2: pt(0.98, 0.10))
+        p.addCurve(to: pt(0.5, 0.95),                                      // 오른쪽으로 내려와 끝점
+                   controlPoint1: pt(0.98, 0.54), controlPoint2: pt(0.66, 0.74))
         p.close(); return p
     }
 
     // MARK: - Render
 
-    /// 색 채움 + 흰 테두리 + 폴더 이름. 스티커와 구분되는 명확한 '폴더' 룩.
-    func image(name: String, fill: UIColor, size: CGFloat = 240) -> UIImage {
+    /// 색 채움 + 흰 테두리 + 폴더 이름(글자색 지정). 스티커와 구분되는 명확한 '폴더' 룩.
+    func image(name: String, fill: UIColor, label: UIColor = .black, size: CGFloat = 240) -> UIImage {
         let pad = size * 0.1
         let rect = CGRect(x: pad, y: pad, width: size - pad * 2, height: size - pad * 2)
         let fmt = UIGraphicsImageRendererFormat.default()
         fmt.opaque = false; fmt.scale = 2
         return UIGraphicsImageRenderer(size: CGSize(width: size, height: size), format: fmt).image { _ in
-            let path = self.path(in: rect)
-            fill.setFill(); path.fill()
-            UIColor.white.setStroke(); path.lineWidth = size * 0.055; path.stroke()
+            if let symbol = self.systemSymbol {
+                // 시스템 아이콘(SF Symbol)로 채운 모양 + 흰 테두리.
+                Self.drawSymbol(symbol, in: rect, fill: fill, border: size * 0.05)
+            } else {
+                let path = self.path(in: rect)
+                fill.setFill(); path.fill()
+                UIColor.white.setStroke(); path.lineWidth = size * 0.055; path.stroke()
+            }
 
             // 모양별 안전 박스 — 글자가 모양을 뚫지 않게 폭/위치 제한 + 폰트 축소 + 잘림.
             let box = self.labelBox
@@ -125,7 +173,7 @@ enum FolderShape: CaseIterable {
             }
             let attrs: [NSAttributedString.Key: Any] = [
                 .font: UIFont.systemFont(ofSize: fontSize, weight: .heavy),
-                .foregroundColor: UIColor.black,
+                .foregroundColor: label,
                 .paragraphStyle: para
             ]
             let th = fontSize * 1.3

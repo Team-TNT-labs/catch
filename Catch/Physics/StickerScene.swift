@@ -44,12 +44,12 @@ final class StickerScene: SKScene {
         return UUID(uuidString: n)
     }
 
-    private let displayMaxDimension: CGFloat = 140
+    private let displayMaxDimension: CGFloat = 126   // 기본 크기(이전 140의 0.9배)
 
-    /// 스티커가 많아질수록 새 스티커를 약간 작게(항아리가 넘치지 않게). 14개부터 줄이고 최소 96.
+    /// 스티커가 많아질수록 새 스티커를 약간 작게(항아리가 넘치지 않게). 14개부터 줄이고 최소 86.
     private func crowdDisplayMax(for count: Int) -> CGFloat {
         guard count > 14 else { return displayMaxDimension }
-        return max(96, displayMaxDimension - CGFloat(count - 14) * 3)
+        return max(86, displayMaxDimension - CGFloat(count - 14) * 3)
     }
 
     /// 하단 툴바(가운데 알약) 충돌 바디 — 스티커가 바에 가려지지 않게 부딪힘.
@@ -198,9 +198,10 @@ final class StickerScene: SKScene {
     }
 
     /// 폴더를 모양 노드로 항아리에 투하한다(스티커처럼 떨어져 쌓임).
-    func addFolder(id: UUID, name: String, shape rawShape: Int? = nil, color: Int? = nil) {
+    func addFolder(id: UUID, name: String, shape rawShape: Int? = nil, color: Int? = nil, labelColor: Int? = nil) {
         let shape = FolderShape.resolve(rawShape, id: id)
-        let image = shape.image(name: name, fill: FolderPalette.uiColor(color))
+        let image = shape.image(name: name, fill: FolderPalette.uiColor(color),
+                                label: FolderLabelPalette.uiColor(labelColor))
         let node = SKSpriteNode(texture: SKTexture(image: image))
         node.name = "F:" + id.uuidString
 
