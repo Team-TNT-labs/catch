@@ -53,6 +53,11 @@ final class CatchRepository {
         loadLocal().map { $0.cloud }.filter { folderId == nil || $0.folderId == folderId }
     }
 
+    /// 특정 폴더 소속 캐치만(엄격 일치). nil = 미분류(루트) 캐치.
+    func localCatches(inFolder folderId: UUID?) -> [CloudCatch] {
+        loadLocal().map { $0.cloud }.filter { $0.folderId == folderId }
+    }
+
     // MARK: - 촬영 직후: 로컬 즉시 저장
     @discardableResult
     func capture(image: UIImage) async throws -> CloudCatch {

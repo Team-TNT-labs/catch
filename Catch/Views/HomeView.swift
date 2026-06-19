@@ -27,6 +27,10 @@ final class SceneHolder: ObservableObject {
     @Published var focused: CloudCatch?       // 탭한 스티커(포커스 프리뷰)
     @Published var focusedImage: UIImage?
     @Published var pendingDeleteId: UUID?     // 꾹 눌러 삭제 요청 → 확인 대기
+    @Published var folders: [Folder] = []     // 내 폴더(루트에서 모양 노드로 표시)
+    @Published var currentFolder: Folder?     // nil = 루트(미분류 + 폴더들)
+    @Published var folderToEdit: Folder?      // 꾹 눌러 편집 시트
+    @Published var ejectHovering = false      // 폴더 안: 스티커가 뒤로가기 위에 올라옴
 
     var isGrid: Bool { mode == .grid }
 
@@ -74,11 +78,82 @@ final class SceneHolder: ObservableObject {
         scene.onTapCatch = { [weak self] id in
             Task { await self?.focus(id) }
         }
+        scene.onOpenFolder = { [weak self] id in
+            Task { await self?.enterFolder(id) }
+        }
+        scene.onDropOnFolder = { [weak self] sid, fid in
+            self?.dropSticker(sid, into: fid)
+        }
+        scene.onEditFolder = { [weak self] id in
+            self?.folderToEdit = self?.folders.first { $0.id == id }
+        }
+        scene.onEjectSticker = { [weak self] sid in
+            self?.ejectSticker(sid)
+        }
+        scene.onEjectHover = { [weak self] on in
+            self?.ejectHovering = on
+        }
+    }
+
+    /// 스티커를 폴더 밖(미분류)으로. 노드는 씬에서 빨려 나가는 중.
+    private func ejectSticker(_ stickerId: UUID) {
+        byId[stickerId] = nil
+        catches.removeAll { $0.id == stickerId }
+        repo.setFolder(stickerId, folderId: nil)
+        Task { await FolderRepository.shared.assign(catchId: stickerId, folderId: nil) }
+    }
+
+    // MARK: - 폴더 네비게이션
+
+    func enterFolder(_ id: UUID) async {
+        currentFolder = folders.first { $0.id == id }
+        scene.ejectEnabled = true   // 폴더 안: 뒤로가기로 빼기 가능
+        await reload(folderId: id)
+    }
+
+    func exitToRoot() async {
+        currentFolder = nil
+        scene.ejectEnabled = false
+        ejectHovering = false
+        await reload(folderId: nil)
+    }
+
+    func createFolder(name: String) async {
+        guard let f = await FolderRepository.shared.create(name: name) else { return }
+        folders.append(f)
+        if currentFolder == nil { scene.addFolder(id: f.id, name: f.name, shape: f.shape, color: f.color) }
+    }
+
+    func updateFolder(_ id: UUID, name: String, shape: Int?, color: Int?) async {
+        guard let i = folders.firstIndex(where: { $0.id == id }) else { return }
+        folders[i].name = name; folders[i].shape = shape; folders[i].color = color
+        if currentFolder?.id == id { currentFolder = folders[i] }
+        await FolderRepository.shared.update(id, name: name, shape: shape, color: color)
+        if currentFolder == nil {   // 루트 노드 갱신(새 모양/색/이름)
+            scene.removeFolderNode(id: id)
+            scene.addFolder(id: id, name: name, shape: shape, color: color)
+        }
+    }
+
+    func deleteFolder(_ id: UUID) async {
+        await FolderRepository.shared.delete(id)
+        folders.removeAll { $0.id == id }
+        scene.removeFolderNode(id: id)
+        folderToEdit = nil
+    }
+
+    /// 스티커를 폴더에 담는다(노드는 씬에서 빨려 들어가는 중). 데이터/서버 배정 + 현재 목록에서 제거.
+    private func dropSticker(_ stickerId: UUID, into folderId: UUID) {
+        byId[stickerId] = nil
+        catches.removeAll { $0.id == stickerId }
+        repo.setFolder(stickerId, folderId: folderId)   // 로컬 즉시
+        Task { await FolderRepository.shared.assign(catchId: stickerId, folderId: folderId) }
     }
 
     func loadMineIfNeeded() async {
         guard !loadedOnce else { return }
         loadedOnce = true
+        folders = await FolderRepository.shared.listMine()
         await reload(folderId: nil)
     }
 
@@ -86,28 +161,37 @@ final class SceneHolder: ObservableObject {
         scene.clearAll()
         byId.removeAll()
         catches.removeAll()
-        // 로컬에서 즉시 표시(네트워크 대기 없음)
-        let local = repo.localCatches(folderId: folderId)
-        isEmpty = local.isEmpty
         isLoading = false
+
+        // 루트면 폴더들을 모양 노드로 먼저 투하.
+        if folderId == nil {
+            for f in folders {
+                scene.addFolder(id: f.id, name: f.name, shape: f.shape, color: f.color)
+                try? await Task.sleep(nanoseconds: 45_000_000)
+            }
+        }
+
+        // 해당 폴더(루트=미분류) 스티커 — 로컬 즉시.
+        let local = repo.localCatches(inFolder: folderId)
         catches = local
         for c in local {
             byId[c.id] = c
             try? await Task.sleep(nanoseconds: 70_000_000)
             await spawn(c)
         }
-        // 백그라운드: 클라우드와 병합해 다른 기기 캐치 추가
+        // 백그라운드: 클라우드와 병합해 다른 기기 캐치 추가.
         let added = await repo.refreshFromCloud()
-        for c in added where folderId == nil || c.folderId == folderId {
+        for c in added where c.folderId == folderId {
             guard byId[c.id] == nil else { continue }
             byId[c.id] = c
             catches.append(c)
             await spawn(c)
         }
-        if !byId.isEmpty { isEmpty = false }
+        isEmpty = byId.isEmpty && (folderId != nil || folders.isEmpty)
     }
 
     func add(_ c: CloudCatch) async {
+        if currentFolder != nil { await exitToRoot() }   // 새 캐치는 루트(미분류)로
         byId[c.id] = c
         catches.append(c)
         isEmpty = false
@@ -153,9 +237,8 @@ struct HomeView: View {
     @EnvironmentObject private var auth: AuthService
     @ObservedObject var holder: SceneHolder
 
-    @State private var folders: [Folder] = []
-    @State private var selectedFolder: UUID?
-    @State private var showFolders = false
+    @State private var showAddFolder = false
+    @State private var newFolderName = ""
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -172,32 +255,23 @@ struct HomeView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
-            VStack(spacing: 10) {
-                topBar
-                folderBar
-            }
-            .padding(.top, deviceSafeAreaTop + 4)
+            topBar
+                .padding(.top, deviceSafeAreaTop + 4)
         }
         .animation(.easeInOut(duration: 0.45), value: holder.isGrid)
         .task {
             // 하단 커스텀 툴바(가운데 알약) 충돌 바디 설정 — 스티커가 바에 안 가려지게.
             holder.scene.toolbarBarrier = (width: 226, height: 72, bottomMargin: deviceSafeAreaBottom + 6)
             await holder.loadMineIfNeeded()
-            folders = await FolderRepository.shared.listMine()
         }
-        .sheet(isPresented: $showFolders) {
-            FoldersView(onChanged: {
-                Task {
-                    folders = await FolderRepository.shared.listMine()
-                    await holder.reload(folderId: selectedFolder)
-                }
-            })
+        .alert("새 폴더", isPresented: $showAddFolder) {
+            TextField("폴더 이름", text: $newFolderName)
+            Button("취소", role: .cancel) {}
+            Button("추가") { addFolder() }
         }
-        // 삭제 확인 다이얼로그는 컨테이너(MainContainerView)에서 — 페이저 자식인 HomeView는
-        // holder 변경에 재렌더되지 않아 여기 붙이면 안 뜬다.
+        // 삭제 확인 다이얼로그는 컨테이너(MainContainerView)에서.
     }
 
-    /// 그리드 보기 — 고정 크기 셀의 스크롤 격자(탭→포커스, 길게눌러 삭제).
     /// 그리드 보기 — 고정 크기 셀의 스크롤 격자(탭→포커스, 길게눌러 삭제).
     private var gridView: some View {
         ScrollView {
@@ -214,7 +288,7 @@ struct HomeView: View {
                     .contextMenu {
                         Button(role: .destructive) {
                             Task { await holder.deleteFromGrid(c.id) }
-                        } label: { Label("삭제", systemImage: "trash") }
+                        } label: { Text("삭제") }   // 아이콘 빼서 전역 tint와 색 불일치 방지(빨강 통일)
                     }
                 }
             }
@@ -226,66 +300,58 @@ struct HomeView: View {
         .background(Color.black.ignoresSafeArea())
     }
 
-    private var folderBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                chip("all", selected: selectedFolder == nil) {
-                    selectedFolder = nil
-                    Task { await holder.reload(folderId: nil) }
-                }
-                ForEach(folders) { f in
-                    chip(f.name, selected: selectedFolder == f.id) {
-                        selectedFolder = f.id
-                        Task { await holder.reload(folderId: f.id) }
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-        }
-    }
-
     private var topBar: some View {
-        HStack {
-            if UIImage(named: "CatchLogo") != nil {
-                Image("CatchLogo").resizable().scaledToFit().frame(height: 26)
-            } else {
-                Text("catch").font(.system(size: 24, weight: .heavy)).foregroundStyle(Theme.lime)
+        ZStack {
+            // 폴더 안: 제목 가운데 정렬
+            if let folder = holder.currentFolder {
+                Text(folder.name).font(.headline).foregroundStyle(Theme.ink).lineLimit(1)
+                    .frame(maxWidth: 180)
             }
-            Spacer()
-            HStack(spacing: 10) {
-                // 보기 모드 — 누를 때마다 중력 → 둥둥 → 그리드 순환
-                Button { holder.cycleMode() } label: {
-                    Image(systemName: holder.mode.icon)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 44, height: 44)
-                        .liquidGlass(Circle(), interactive: true)
+            HStack {
+                // 루트: 로고 / 폴더 안: 뒤로가기
+                if holder.currentFolder != nil {
+                    Button { Task { await holder.exitToRoot() } } label: {
+                        Image(systemName: holder.ejectHovering ? "arrow.up.left.circle.fill" : "chevron.left")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(holder.ejectHovering ? .black : .white)
+                            .frame(width: 44, height: 44)
+                            .background(holder.ejectHovering ? Theme.lime : .clear, in: Circle())
+                            .liquidGlass(Circle(), interactive: true)
+                            .scaleEffect(holder.ejectHovering ? 1.25 : 1)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: holder.ejectHovering)
+                    }
+                } else if UIImage(named: "CatchLogo") != nil {
+                    Image("CatchLogo").resizable().scaledToFit().frame(height: 26)
+                } else {
+                    Text("catch").font(.system(size: 24, weight: .heavy)).foregroundStyle(Theme.lime)
                 }
-                // 메뉴
-                Menu {
-                    Button { showFolders = true } label: { Label("폴더 관리", systemImage: "folder") }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 44, height: 44)
-                        .liquidGlass(Circle(), interactive: true)
+                Spacer()
+                HStack(spacing: 10) {
+                    // 보기 모드 — 누를 때마다 중력 ↔ 그리드
+                    Button { holder.cycleMode() } label: {
+                        Image(systemName: holder.mode.icon)
+                            .font(.system(size: 18, weight: .semibold)).foregroundStyle(.white)
+                            .frame(width: 44, height: 44).liquidGlass(Circle(), interactive: true)
+                    }
+                    // 폴더 추가 — 루트에서만
+                    if holder.currentFolder == nil {
+                        Button { newFolderName = ""; showAddFolder = true } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 18, weight: .semibold)).foregroundStyle(.white)
+                                .frame(width: 44, height: 44).liquidGlass(Circle(), interactive: true)
+                        }
+                    }
                 }
             }
         }
         .padding(.horizontal, 18)
     }
 
-    private func chip(_ title: String, selected: Bool, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.footnote.weight(.bold))
-                .foregroundStyle(selected ? .black : Theme.muted)
-                .padding(.horizontal, 16).frame(height: 32)
-                .background(selected ? Theme.coral : Theme.surface, in: Capsule())
-        }
+    private func addFolder() {
+        let name = newFolderName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+        Task { await holder.createFolder(name: name) }
     }
-
 }
 
 /// 탭한 스티커를 블러 배경 위에 중앙·확대로 화려하게.

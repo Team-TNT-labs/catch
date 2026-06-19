@@ -13,6 +13,36 @@ final class StickerScene: SKScene {
     var onRequestDelete: ((UUID) -> Void)?
     /// 스티커를 가볍게 탭하면 해당 캐치 id를 알린다(호스트가 포커스 프리뷰).
     var onTapCatch: ((UUID) -> Void)?
+    /// 폴더 노드를 탭하면 해당 폴더 id를 알린다(호스트가 폴더 진입).
+    var onOpenFolder: ((UUID) -> Void)?
+    /// 스티커를 폴더 위로 드롭하면 (스티커 id, 폴더 id)를 알린다(호스트가 폴더 배정).
+    var onDropOnFolder: ((UUID, UUID) -> Void)?
+    /// 폴더를 길게 누르면 해당 폴더 id를 알린다(호스트가 편집 시트).
+    var onEditFolder: ((UUID) -> Void)?
+    /// 폴더 안에서 스티커를 뒤로가기 영역에 드롭하면 폴더 밖(미분류)으로 빼라고 알린다.
+    var onEjectSticker: ((UUID) -> Void)?
+    /// 폴더 안에서 스티커가 뒤로가기 영역 위에 올라왔는지(호스트가 버튼 하이라이트).
+    var onEjectHover: ((Bool) -> Void)?
+    /// 폴더 안일 때만 eject 활성(루트에선 끔).
+    var ejectEnabled = false
+
+    private var ejectHovered = false
+
+    /// 좌상단 뒤로가기 버튼 근처 영역(씬 좌표, y 위쪽).
+    private func inEjectZone(_ p: CGPoint) -> Bool {
+        p.x < 110 && p.y > size.height - 120
+    }
+
+    // 폴더 노드 식별 — 이름 접두사 "F:".
+    private func isFolder(_ node: SKNode) -> Bool { node.name?.hasPrefix("F:") ?? false }
+    private func folderId(_ node: SKNode) -> UUID? {
+        guard let n = node.name, n.hasPrefix("F:") else { return nil }
+        return UUID(uuidString: String(n.dropFirst(2)))
+    }
+    private func catchId(_ node: SKNode) -> UUID? {
+        guard let n = node.name, !n.hasPrefix("F:") else { return nil }
+        return UUID(uuidString: n)
+    }
 
     private let displayMaxDimension: CGFloat = 140
 
@@ -36,6 +66,7 @@ final class StickerScene: SKScene {
 
     // 드래그 상태
     private var draggedNode: SKSpriteNode?
+    private weak var hoveredFolder: SKNode?   // 드래그 중 위에 올라온 폴더(하이라이트)
     private var dragStartPoint: CGPoint = .zero
     private var lastDragPoint: CGPoint = .zero
     private var lastDragTime: TimeInterval = 0
@@ -166,6 +197,39 @@ final class StickerScene: SKScene {
         childNode(withName: id.uuidString)?.removeFromParent()
     }
 
+    /// 폴더를 모양 노드로 항아리에 투하한다(스티커처럼 떨어져 쌓임).
+    func addFolder(id: UUID, name: String, shape rawShape: Int? = nil, color: Int? = nil) {
+        let shape = FolderShape.resolve(rawShape, id: id)
+        let image = shape.image(name: name, fill: FolderPalette.uiColor(color))
+        let node = SKSpriteNode(texture: SKTexture(image: image))
+        node.name = "F:" + id.uuidString
+
+        let maxDim: CGFloat = 132
+        let longest = max(image.size.width, image.size.height)
+        let scale = longest > 0 ? min(1, maxDim / longest) : 1
+        let displaySize = CGSize(width: max(1, image.size.width * scale),
+                                 height: max(1, image.size.height * scale))
+        node.size = displaySize
+
+        let body = shape.physicsBody(displaySize: displaySize)
+        body.restitution = 0.02; body.friction = 0.6
+        body.linearDamping = 0.3; body.angularDamping = 0.8
+        body.allowsRotation = true; body.isDynamic = true
+        body.usesPreciseCollisionDetection = true   // 벽 뚫고 사라짐 방지
+        node.physicsBody = body
+
+        let half = displaySize.width / 2
+        node.position = CGPoint(x: .random(in: half...max(half, size.width - half)),
+                                y: size.height - displaySize.height)
+        node.zRotation = .random(in: -0.2...0.2)
+        addChild(node)
+    }
+
+    /// 폴더 노드 즉시 제거.
+    func removeFolderNode(id: UUID) {
+        childNode(withName: "F:" + id.uuidString)?.removeFromParent()
+    }
+
     /// 항아리를 비운다(폴더 전환 시).
     func clearAll() {
         cancelTimers()
@@ -205,6 +269,7 @@ final class StickerScene: SKScene {
         body.angularDamping = 0.8          // 회전 빨리 잦아듦(지터 감소)
         body.allowsRotation = true
         body.isDynamic = true
+        body.usesPreciseCollisionDetection = true   // 벽 뚫고 사라짐 방지
         node.physicsBody = body
 
         // 화면 안쪽 상단에서 낙하(상단을 닫았으므로 화면 밖에서 스폰하지 않음).
@@ -332,15 +397,21 @@ final class StickerScene: SKScene {
 
         guard !isGrid else { return }   // 그리드: 탭만 감지(드래그/삭제 없음)
 
-        node.physicsBody?.isDynamic = false   // 드래그 중 물리 분리(desync 방지)
-        onGrabChanged?(true)                  // 잡는 동안 페이지 스크롤 잠금
+        node.physicsBody?.isDynamic = false      // 드래그 중 물리 분리(desync 방지)
+        // 드래그 중엔 충돌에서 완전히 제외(양방향) — 폴더를 밀어내거나 벽 밖으로 튕기지 않게.
+        node.physicsBody?.collisionBitMask = 0
+        node.physicsBody?.categoryBitMask = 0
+        node.zPosition = 50                      // 맨 앞으로 — 폴더 위에 얹힌 채 끌리도록
+        onGrabChanged?(true)                     // 잡는 동안 페이지 스크롤 잠금
 
+        // 길게 누르면: 스티커=삭제 요청 / 폴더=편집 요청.
         cancelLongPress()
         run(.sequence([
             .wait(forDuration: longPressDuration),
             .run { [weak self, weak node] in
                 guard let self, let node else { return }
-                self.requestDelete(node)
+                if self.isFolder(node) { self.requestEditFolder(node) }
+                else { self.requestDelete(node) }
             }
         ]), withKey: longPressKey)
     }
@@ -367,6 +438,46 @@ final class StickerScene: SKScene {
         node.position = location
         lastDragPoint = location
         lastDragTime = now
+
+        // 스티커 드래그 중: 폴더 하이라이트 + (폴더 안이면) 뒤로가기 영역 하이라이트.
+        if catchId(node) != nil {
+            updateFolderHighlight(under: node)
+            if ejectEnabled { setEjectHover(inEjectZone(node.position)) }
+        }
+    }
+
+    private func updateFolderHighlight(under node: SKNode) {
+        let target = folderNode(near: node)
+        guard target !== hoveredFolder else { return }
+        hoveredFolder?.run(.scale(to: 1.0, duration: 0.12))
+        hoveredFolder = target
+        target?.run(.scale(to: 1.18, duration: 0.12))
+    }
+
+    private func clearFolderHighlight() {
+        hoveredFolder?.run(.scale(to: 1.0, duration: 0.12))
+        hoveredFolder = nil
+    }
+
+    private func setEjectHover(_ on: Bool) {
+        guard on != ejectHovered else { return }
+        ejectHovered = on
+        onEjectHover?(on)
+    }
+
+    /// 스티커를 폴더 밖으로 빼는 연출(좌상단으로 빨려 나가며 사라짐).
+    private func ejectSticker(_ node: SKSpriteNode, sticker sid: UUID) {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        setEjectHover(false)
+        onEjectSticker?(sid)
+        node.physicsBody = nil
+        let target = CGPoint(x: 36, y: size.height - 36)
+        node.run(.sequence([
+            .group([.move(to: target, duration: 0.25),
+                    .scale(to: 0.08, duration: 0.25),
+                    .fadeOut(withDuration: 0.25)]),
+            .removeFromParent()
+        ]))
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -385,17 +496,69 @@ final class StickerScene: SKScene {
         let duration = CACurrentMediaTime() - dragStartTime
         let isTap = !dragMoved && duration < longPressDuration
 
-        if !isGrid {
-            onGrabChanged?(false)
-            node.physicsBody?.isDynamic = true
-            if dragMoved {
-                node.physicsBody?.velocity = clampVelocity(dragVelocity, max: 1500)
-            }
+        if isGrid {
+            if isTap, let id = catchId(node) { onTapCatch?(id) }
+            return
         }
 
-        if isTap, let name = node.name, let id = UUID(uuidString: name) {
-            onTapCatch?(id)
+        clearFolderHighlight()
+        setEjectHover(false)
+        onGrabChanged?(false)
+        node.physicsBody?.collisionBitMask = 0xFFFFFFFF   // 충돌 복원(양방향)
+        node.physicsBody?.categoryBitMask = 0xFFFFFFFF
+        node.physicsBody?.isDynamic = true
+
+        // 스티커를 폴더 근처에 드롭 → 그 폴더에 담기.
+        if dragMoved, let sid = catchId(node),
+           let folder = folderNode(near: node), let fid = folderId(folder) {
+            dropIntoFolder(node, sticker: sid, folder: folder, folderId: fid)
+            return
         }
+
+        // 폴더 안: 스티커를 뒤로가기 영역에 드롭 → 폴더 밖(미분류)으로.
+        if dragMoved, ejectEnabled, let sid = catchId(node), inEjectZone(node.position) {
+            ejectSticker(node, sticker: sid)
+            return
+        }
+
+        node.zPosition = 0   // z 복원(드롭이 아니면 다시 일반 레이어로)
+
+        if dragMoved {
+            node.physicsBody?.velocity = clampVelocity(dragVelocity, max: 1500)
+        }
+
+        if isTap {
+            if let fid = folderId(node) { onOpenFolder?(fid) }
+            else if let id = catchId(node) { onTapCatch?(id) }
+        }
+    }
+
+    /// 드래그 중인 스티커에 가장 가까운(잡기 반경 내) 폴더 노드. 정확히 안 겹쳐도 잡힘.
+    private func folderNode(near node: SKNode) -> SKNode? {
+        let p = node.position
+        var best: SKNode?
+        var bestDist = CGFloat.greatestFiniteMagnitude
+        for child in children where child !== node && isFolder(child) {
+            let d = hypot(child.position.x - p.x, child.position.y - p.y)
+            let capture = (max(child.frame.width, child.frame.height)
+                           + max(node.frame.width, node.frame.height)) / 2 * 0.85
+            if d < capture && d < bestDist { best = child; bestDist = d }
+        }
+        return best
+    }
+
+    /// 스티커를 폴더로 빨려 들어가는 연출과 함께 담는다.
+    private func dropIntoFolder(_ node: SKSpriteNode, sticker sid: UUID, folder: SKNode, folderId fid: UUID) {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        onDropOnFolder?(sid, fid)
+        node.physicsBody = nil
+        node.run(.sequence([
+            .group([.move(to: folder.position, duration: 0.28),
+                    .scale(to: 0.08, duration: 0.28),
+                    .fadeOut(withDuration: 0.28)]),
+            .removeFromParent()
+        ]))
+        folder.run(.sequence([.scale(to: 1.15, duration: 0.1), .scale(to: 1.0, duration: 0.12)]))
     }
 
     /// 길게 누르면 즉시 삭제하지 않고 삭제를 요청한다(호스트가 확인 다이얼로그 표시).
@@ -403,12 +566,28 @@ final class StickerScene: SKScene {
         // 드래그로 전환됐으면 무시.
         guard draggedNode === node, !dragMoved else { return }
         onGrabChanged?(false)
-        node.physicsBody?.isDynamic = true   // 물리 복귀(취소 대비)
+        node.physicsBody?.collisionBitMask = 0xFFFFFFFF   // 충돌 복원(취소 대비)
+        node.physicsBody?.categoryBitMask = 0xFFFFFFFF
+        node.physicsBody?.isDynamic = true
+        node.zPosition = 0
         draggedNode = nil
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         if let name = node.name, let id = UUID(uuidString: name) {
             onRequestDelete?(id)
         }
+    }
+
+    /// 폴더 길게 누름 → 편집 요청(이동/탭과 구분).
+    private func requestEditFolder(_ node: SKSpriteNode) {
+        guard draggedNode === node, !dragMoved else { return }
+        onGrabChanged?(false)
+        node.physicsBody?.collisionBitMask = 0xFFFFFFFF
+        node.physicsBody?.categoryBitMask = 0xFFFFFFFF
+        node.physicsBody?.isDynamic = true
+        node.zPosition = 0
+        draggedNode = nil
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        if let id = folderId(node) { onEditFolder?(id) }
     }
 
     /// 삭제 확정 시: 흔들고 사라지는 연출과 함께 노드 제거.

@@ -87,6 +87,18 @@ struct MainContainerView: View {
         .alert("안내", isPresented: Binding(
             get: { flow.errorMessage != nil }, set: { if !$0 { flow.errorMessage = nil } }
         )) { Button("확인", role: .cancel) {} } message: { Text(flow.errorMessage ?? "") }
+        // 폴더 편집 시트 — 컨테이너 레벨(페이저 자식은 holder 변경에 재렌더 불안정).
+        .sheet(item: $holder.folderToEdit) { folder in
+            FolderEditView(
+                folder: folder,
+                onSave: { name, shape, color in
+                    holder.folderToEdit = nil
+                    Task { await holder.updateFolder(folder.id, name: name, shape: shape, color: color) }
+                },
+                onDelete: { Task { await holder.deleteFolder(folder.id) } },
+                onClose: { holder.folderToEdit = nil }
+            )
+        }
         // 꾹 눌러 삭제 확인 — 컨테이너 레벨(페이저 자식은 holder 변경에 재렌더 안 됨).
         .confirmationDialog(
             "이 스티커를 삭제할까요?",

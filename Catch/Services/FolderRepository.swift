@@ -28,6 +28,13 @@ final class FolderRepository {
             .eq("id", value: id.uuidString).execute()
     }
 
+    private struct StyleUpdate: Encodable { let name: String; let shape: Int?; let color: Int? }
+    func update(_ id: UUID, name: String, shape: Int?, color: Int?) async {
+        _ = try? await Supa.client.from("folders")
+            .update(StyleUpdate(name: name, shape: shape, color: color))
+            .eq("id", value: id.uuidString).execute()
+    }
+
     func setPublic(_ id: UUID, _ isPublic: Bool) async {
         _ = try? await Supa.client.from("folders").update(["is_public": isPublic])
             .eq("id", value: id.uuidString).execute()
