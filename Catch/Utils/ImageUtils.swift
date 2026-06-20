@@ -108,6 +108,30 @@ extension UIImage {
         return (working, working.stickerBordered(color: .white, width: borderW))
     }
 
+    /// 원형으로 크롭 + 흰 링을 두른 아바타(물리 서클용). 정사각 캔버스.
+    func circularRinged(size: CGFloat = 200, ring: CGFloat = 10, ringColor: UIColor = .white) -> UIImage {
+        let fmt = UIGraphicsImageRendererFormat.default()
+        fmt.opaque = false; fmt.scale = 2
+        return UIGraphicsImageRenderer(size: CGSize(width: size, height: size), format: fmt).image { _ in
+            ringColor.setFill()
+            UIBezierPath(ovalIn: CGRect(x: 0, y: 0, width: size, height: size)).fill()
+            let inner = CGRect(x: ring, y: ring, width: size - ring * 2, height: size - ring * 2)
+            let clip = UIBezierPath(ovalIn: inner); clip.addClip()
+            let img = squareCropped()
+            img.draw(in: inner)
+        }
+    }
+
+    /// 가운데 정사각형으로 크롭(아바타용).
+    func squareCropped() -> UIImage {
+        guard let cg = cgImage else { return self }
+        let w = cg.width, h = cg.height
+        let side = min(w, h)
+        let rect = CGRect(x: (w - side) / 2, y: (h - side) / 2, width: side, height: side)
+        guard let cropped = cg.cropping(to: rect) else { return self }
+        return UIImage(cgImage: cropped, scale: scale, orientation: imageOrientation)
+    }
+
     /// 긴 변이 maxDimension(pt) 이하가 되도록 비율 유지 리사이즈. 이미 작으면 그대로 반환.
     func resized(maxDimension: CGFloat) -> UIImage {
         let longest = max(size.width, size.height)

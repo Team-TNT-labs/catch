@@ -47,10 +47,9 @@ struct ProfileView: View {
 
     private var header: some View {
         VStack(spacing: 12) {
-            Text(profile?.displayName ?? " ")
+            AvatarView(path: profile?.avatarUrl, fallbackText: profile?.username, size: 72)
+            Text(profile?.username ?? " ")
                 .font(.headline).foregroundStyle(Theme.ink)
-            Text("@\(profile?.username ?? "")")
-                .font(.subheadline).foregroundStyle(Theme.ink.opacity(0.55))
 
             HStack(spacing: 28) {
                 stat("수집", counts?.collections)

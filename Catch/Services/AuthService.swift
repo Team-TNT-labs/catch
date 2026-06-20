@@ -107,6 +107,14 @@ final class AuthService: ObservableObject {
         }
     }
 
+    /// 아바타 경로 변경을 로컬 프로필/캐시에 즉시 반영.
+    func setAvatarPath(_ path: String?) {
+        guard var p = profile else { return }
+        p.avatarUrl = path
+        profile = p
+        Self.cache(p)
+    }
+
     func signOut() async {
         try? await Supa.client.auth.signOut()
         Self.cache(nil)
