@@ -59,6 +59,9 @@ final class StickerScene: SKScene {
     }
     private var barrierNode: SKNode?
 
+    /// 읽기전용(타 유저 수집 열람) — 폴더 담기/이젝트/롱프레스 삭제·편집 비활성. 탭/폴더 열기/물리 놀이는 유지.
+    var readOnly = false
+
     /// 그리드 정렬 모드(중력 off, 터치 비활성).
     private(set) var isGrid = false
     /// 둥둥 떠다니는 모드(중력 0 + 잔잔한 표류).
@@ -411,16 +414,18 @@ final class StickerScene: SKScene {
         node.zPosition = 50                      // 맨 앞으로 — 폴더 위에 얹힌 채 끌리도록
         onGrabChanged?(true)                     // 잡는 동안 페이지 스크롤 잠금
 
-        // 길게 누르면: 스티커=삭제 요청 / 폴더=편집 요청.
+        // 길게 누르면: 스티커=삭제 요청 / 폴더=편집 요청. (읽기전용은 비활성)
         cancelLongPress()
-        run(.sequence([
-            .wait(forDuration: longPressDuration),
-            .run { [weak self, weak node] in
-                guard let self, let node else { return }
-                if self.isFolder(node) { self.requestEditFolder(node) }
-                else { self.requestDelete(node) }
-            }
-        ]), withKey: longPressKey)
+        if !readOnly {
+            run(.sequence([
+                .wait(forDuration: longPressDuration),
+                .run { [weak self, weak node] in
+                    guard let self, let node else { return }
+                    if self.isFolder(node) { self.requestEditFolder(node) }
+                    else { self.requestDelete(node) }
+                }
+            ]), withKey: longPressKey)
+        }
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -515,8 +520,8 @@ final class StickerScene: SKScene {
         node.physicsBody?.categoryBitMask = 0xFFFFFFFF
         node.physicsBody?.isDynamic = true
 
-        // 스티커를 폴더 근처에 드롭 → 그 폴더에 담기.
-        if dragMoved, let sid = catchId(node),
+        // 스티커를 폴더 근처에 드롭 → 그 폴더에 담기. (읽기전용은 비활성)
+        if dragMoved, !readOnly, let sid = catchId(node),
            let folder = folderNode(near: node), let fid = folderId(folder) {
             dropIntoFolder(node, sticker: sid, folder: folder, folderId: fid)
             return

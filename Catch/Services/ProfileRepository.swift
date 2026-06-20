@@ -18,6 +18,29 @@ final class ProfileRepository {
         (try? await Supa.client.rpc("following_profiles").execute().value) ?? []
     }
 
+    private struct FollowEdge: Decodable { let profile: Profile }
+    private static let profileCols = "id,username,display_name,avatar_url,bio"
+
+    /// 특정 유저가 팔로우하는 사람들. follows.follower_id = userId → followee 프로필 임베드.
+    func following(of userId: UUID) async -> [Profile] {
+        let rows: [FollowEdge] = (try? await Supa.client.from("follows")
+            .select("profile:profiles!followee_id(\(Self.profileCols))")
+            .eq("follower_id", value: userId.uuidString)
+            .order("created_at", ascending: false)
+            .execute().value) ?? []
+        return rows.map(\.profile)
+    }
+
+    /// 특정 유저를 팔로우하는 사람들. follows.followee_id = userId → follower 프로필 임베드.
+    func followers(of userId: UUID) async -> [Profile] {
+        let rows: [FollowEdge] = (try? await Supa.client.from("follows")
+            .select("profile:profiles!follower_id(\(Self.profileCols))")
+            .eq("followee_id", value: userId.uuidString)
+            .order("created_at", ascending: false)
+            .execute().value) ?? []
+        return rows.map(\.profile)
+    }
+
     // MARK: - 아바타
     private struct AvatarUpdate: Encodable { let avatar_url: String? }
 

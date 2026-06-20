@@ -16,6 +16,14 @@ final class FolderRepository {
             .execute().value) ?? []
     }
 
+    /// 타 유저 폴더 목록. RLS가 공개 폴더만 노출(owner가 아니면 is_public=true만).
+    func listUser(_ userId: UUID) async -> [Folder] {
+        (try? await Supa.client.from("folders").select()
+            .eq("owner_id", value: userId.uuidString)
+            .order("sort").order("created_at")
+            .execute().value) ?? []
+    }
+
     func create(name: String) async -> Folder? {
         guard let uid = try? await Supa.client.auth.session.user.id else { return nil }
         return try? await Supa.client.from("folders")

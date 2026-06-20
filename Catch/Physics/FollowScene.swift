@@ -29,8 +29,13 @@ func personCircleImage(avatar: UIImage?, initial: String, size: CGFloat = 220) -
 final class FollowScene: SKScene {
     private let motion = MotionService()
     var onTapPerson: ((UUID) -> Void)?
+    /// 하단 떠있는 탭바와 충돌하도록 막는 보이지 않는 배리어(서클이 바 뒤로 숨지 않게).
+    var toolbarBarrier: (width: CGFloat, height: CGFloat, bottomMargin: CGFloat)? {
+        didSet { rebuildToolbarBarrier() }
+    }
+    private var barrierNode: SKNode?
 
-    private let displayDiameter: CGFloat = 78
+    private let displayDiameter: CGFloat = 132   // 스티커 폴더 동그라미(StickerScene maxDim 132)와 동일 크기
     private(set) var isGrid = false
     private var lastGravity = CGVector(dx: 0, dy: -9.8)
 
@@ -44,6 +49,7 @@ final class FollowScene: SKScene {
         scaleMode = .resizeFill
         anchorPoint = .zero
         rebuildWalls()
+        rebuildToolbarBarrier()
         physicsWorld.gravity = CGVector(dx: 0, dy: -9.8)
         motion.onGravity = { [weak self] v in
             DispatchQueue.main.async {
@@ -59,7 +65,7 @@ final class FollowScene: SKScene {
     deinit { motion.stop() }
 
     override func didChangeSize(_ oldSize: CGSize) {
-        super.didChangeSize(oldSize); rebuildWalls()
+        super.didChangeSize(oldSize); rebuildWalls(); rebuildToolbarBarrier()
     }
 
     private func rebuildWalls() {
@@ -67,6 +73,20 @@ final class FollowScene: SKScene {
         let body = SKPhysicsBody(edgeLoopFrom: CGRect(origin: .zero, size: size))
         body.friction = 0.4
         physicsBody = body
+    }
+
+    private func rebuildToolbarBarrier() {
+        barrierNode?.removeFromParent()
+        barrierNode = nil
+        guard let b = toolbarBarrier, size.width > 1, size.height > 1 else { return }
+        let node = SKNode()
+        node.position = CGPoint(x: size.width / 2, y: b.bottomMargin + b.height / 2)
+        let body = SKPhysicsBody(rectangleOf: CGSize(width: b.width, height: b.height))
+        body.isDynamic = false
+        body.friction = 0.4
+        node.physicsBody = body
+        addChild(node)
+        barrierNode = node
     }
 
     override func update(_ currentTime: TimeInterval) {
