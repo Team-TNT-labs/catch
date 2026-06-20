@@ -231,11 +231,15 @@ final class StickerScene: SKScene {
         childNode(withName: "F:" + id.uuidString)?.removeFromParent()
     }
 
-    /// 항아리를 비운다(폴더 전환 시).
+    /// 항아리를 비운다(폴더 전환 시). 물리 바디 유무와 무관하게 이름으로 식별해 제거 —
+    /// 드롭/eject 애니메이션 중(바디 일시 제거)이나 빈-텍스처 바디라도 남지 않게(복제·고정 방지).
     func clearAll() {
         cancelTimers()
-        for case let node as SKSpriteNode in children where node.physicsBody != nil {
-            node.removeFromParent()
+        for case let node as SKSpriteNode in children {
+            guard let name = node.name else { continue }
+            if name.hasPrefix("F:") || UUID(uuidString: name) != nil {
+                node.removeFromParent()
+            }
         }
         draggedNode = nil
     }
@@ -263,7 +267,9 @@ final class StickerScene: SKScene {
         let bodySize = CGSize(width: displaySize.width * innerW, height: displaySize.height * innerH)
         // 바디 트레이스는 거친 텍스처로 — 폴리곤 정점이 줄어 충돌이 가볍고 지터가 적다.
         let bodyTexture = SKTexture(image: bodyImage.resized(maxDimension: 100))
-        let body = SKPhysicsBody(texture: bodyTexture, alphaThreshold: 0.5, size: bodySize)
+        let traced = SKPhysicsBody(texture: bodyTexture, alphaThreshold: 0.5, size: bodySize)
+        // 트레이스가 비면(투명/희박한 알파) area=0 → 바디가 사실상 없어 안 떨어지고 clearAll에도 안 걸린다(복제·고정 원인). 사각형 폴백.
+        let body = traced.area > 0.0001 ? traced : SKPhysicsBody(rectangleOf: bodySize)
         body.restitution = 0.02            // 거의 안 튕김(정지 안정)
         body.friction = 0.6
         body.linearDamping = 0.3           // 충돌 후 속도 빨리 가라앉음
