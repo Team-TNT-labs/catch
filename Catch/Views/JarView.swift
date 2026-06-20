@@ -21,10 +21,10 @@ final class ReadonlyJarHolder: ObservableObject {
         isLoading = false
         for c in catches {
             try? await Task.sleep(nanoseconds: 70_000_000)
-            guard let display = await repo.displayImage(for: c) else { continue }
-            let body = await repo.bodyImage(for: c) ?? display
+            // Phase1 egress 절감: 항아리 표시(≤126px)엔 본문 썸네일(256px)이면 충분 — 원본(1024px) 다운로드 생략.
+            guard let body = await repo.bodyImage(for: c) else { continue }
             let prepared = await Task.detached(priority: .userInitiated) {
-                display.whiteStickerBordered()
+                body.whiteStickerBordered()
             }.value
             scene.addCatch(id: c.id, bordered: prepared.bordered, working: prepared.working, body: body)
         }

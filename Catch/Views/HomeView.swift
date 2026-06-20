@@ -234,11 +234,11 @@ final class SceneHolder: ObservableObject {
     func cancelDelete() { pendingDeleteId = nil }
 
     private func spawn(_ c: CloudCatch) async {
-        guard let display = await repo.displayImage(for: c) else { return }
-        let body = await repo.bodyImage(for: c) ?? display
+        // Phase1 egress 절감: 항아리 표시(≤126px)엔 본문 썸네일(256px)로 충분 — 원본 다운로드 생략.
+        guard let body = await repo.bodyImage(for: c) else { return }
         // 무거운 테두리 생성(블러+드로잉)은 백그라운드에서 — 메인스레드 렉 방지.
         let prepared = await Task.detached(priority: .userInitiated) {
-            display.whiteStickerBordered()
+            body.whiteStickerBordered()
         }.value
         scene.addCatch(id: c.id, bordered: prepared.bordered, working: prepared.working, body: body)
     }
@@ -310,7 +310,7 @@ struct HomeView: View {
                 }
                 ForEach(holder.catches) { c in
                     Button { Task { await holder.focus(c.id) } } label: {
-                        BorderedStickerImage(path: c.imagePath)
+                        BorderedStickerImage(path: c.bodyPath ?? c.imagePath)
                             .padding(10)
                             .frame(height: 116)
                             .frame(maxWidth: .infinity)

@@ -21,7 +21,7 @@ struct FeedCard: View {
         } else {
             VStack(alignment: .leading, spacing: 10) {
                 header
-                CachedCatchImage(path: row.imagePath)
+                CachedCatchImage(path: row.bodyPath ?? row.imagePath)
                     .frame(maxWidth: .infinity)
                     .frame(height: 300)
                     .padding(20)
