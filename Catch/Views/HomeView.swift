@@ -174,6 +174,7 @@ final class SceneHolder: ObservableObject {
         guard !loadedOnce else { return }
         loadedOnce = true
         folders = await FolderRepository.shared.listMine()
+        reconcileOrphans()
         await reload(folderId: nil)
     }
 
@@ -181,7 +182,16 @@ final class SceneHolder: ObservableObject {
     func reloadAll() async {
         await exitToRoot()
         folders = await FolderRepository.shared.listMine()
+        reconcileOrphans()
         await reload(folderId: nil)
+    }
+
+    /// 존재하지 않는 폴더(예: 옛 서버 폴더)를 가리키는 스티커는 미분류(루트)로 되돌려 항아리에서 다시 보이게.
+    private func reconcileOrphans() {
+        let ids = Set(folders.map { $0.id })
+        for c in repo.localCatches() where c.folderId != nil && !ids.contains(c.folderId!) {
+            repo.setFolder(c.id, folderId: nil)
+        }
     }
 
     func reload(folderId: UUID?) async {
