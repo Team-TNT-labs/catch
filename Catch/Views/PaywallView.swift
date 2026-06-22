@@ -26,6 +26,8 @@ struct PaywallView: View {
                     Button { Task { await pro.restore(); if pro.isPro { dismiss() } } } label: {
                         Text("구매 복원").font(.footnote).foregroundStyle(Theme.muted)
                     }
+                    legalLinks
+                    footnote
                 }
                 .padding(24)
             }
@@ -89,6 +91,21 @@ struct PaywallView: View {
                 .strokeBorder(isSel ? Theme.lime : .clear, lineWidth: 2))
         }
         .buttonStyle(.plain)
+    }
+
+    private var legalLinks: some View {
+        HStack(spacing: 8) {
+            Link("이용약관", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+            Text("·").foregroundStyle(Theme.muted.opacity(0.6))
+            Link("개인정보처리방침", destination: URL(string: "https://catch.gojaehyun.com/privacy.html")!)
+        }
+        .font(.caption2.weight(.medium)).foregroundStyle(Theme.muted)
+    }
+
+    private var footnote: some View {
+        Text("구독은 기간이 끝나기 전 취소하지 않으면 자동 갱신됩니다. 언제든 설정 > Apple ID에서 관리할 수 있어요.")
+            .font(.caption2).foregroundStyle(Theme.muted.opacity(0.7))
+            .multilineTextAlignment(.center)
     }
 
     @ViewBuilder private var purchaseButton: some View {
