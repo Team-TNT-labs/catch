@@ -44,7 +44,18 @@ struct PaywallView: View {
         .onAppear { if selected == nil { selected = defaultPlan } }
     }
 
-    private var defaultPlan: Product? { pro.lifetime ?? pro.products.first }
+    private var defaultPlan: Product? { pro.yearly ?? pro.lifetime ?? pro.products.first }
+
+    private func planTitle(_ id: String) -> LocalizedStringKey {
+        if id == ProStore.monthlyID { return "월 구독" }
+        if id == ProStore.yearlyID { return "연 구독" }
+        return "평생 이용"
+    }
+    private func planSubtitle(_ id: String) -> LocalizedStringKey {
+        if id == ProStore.monthlyID { return "매월 자동 갱신" }
+        if id == ProStore.yearlyID { return "가장 인기 · 매년 자동 갱신" }
+        return "한 번 결제로 평생"
+    }
 
     private var header: some View {
         VStack(spacing: 12) {
@@ -72,14 +83,13 @@ struct PaywallView: View {
 
     private func planRow(_ product: Product) -> some View {
         let isSel = selected?.id == product.id
-        let lifetime = product.id == ProStore.lifetimeID
         return Button { selected = product } label: {
             HStack(spacing: 12) {
                 Image(systemName: isSel ? "largecircle.fill.circle" : "circle")
                     .foregroundStyle(isSel ? Theme.lime : Theme.muted)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(lifetime ? "평생 이용" : "연 구독").font(.headline).foregroundStyle(Theme.ink)
-                    Text(lifetime ? "한 번 결제로 평생" : "매년 자동 갱신")
+                    Text(planTitle(product.id)).font(.headline).foregroundStyle(Theme.ink)
+                    Text(planSubtitle(product.id))
                         .font(.caption).foregroundStyle(Theme.muted)
                 }
                 Spacer()

@@ -5,17 +5,19 @@ import StoreKit
 /// Pro 잠금 해제: 사진앨범 불러오기, 폴더 무제한(무료 7개), 백업.
 @MainActor
 final class ProStore: ObservableObject {
-    // App Store Connect 상품: 연간 구독 + 평생(비소모성).
+    // App Store Connect 상품: 월/연 구독 + 평생(비소모성).
+    static let monthlyID = "com.tntlabs.catch.pro.monthly"
     static let yearlyID = "com.tntlabs.catch.pro.yearly"
     static let lifetimeID = "com.tntlabs.catch.pro.lifetime"
-    static let productIDs = [yearlyID, lifetimeID]
+    static let productIDs = [monthlyID, yearlyID, lifetimeID]
     static let freeFolderLimit = 7
 
-    @Published private(set) var products: [Product] = []   // [연간, 평생] 순
+    @Published private(set) var products: [Product] = []   // [월, 연, 평생] 순
     @Published private(set) var isPro = false
     @Published private(set) var loading = true
     @Published var purchasing = false
 
+    var monthly: Product? { products.first { $0.id == Self.monthlyID } }
     var yearly: Product? { products.first { $0.id == Self.yearlyID } }
     var lifetime: Product? { products.first { $0.id == Self.lifetimeID } }
 

@@ -33,6 +33,27 @@
         {
           "adHocOffers" : [],
           "codeOffers" : [],
+          "displayPrice" : "0.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "10011",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "매월 자동 갱신",
+              "displayName" : "월 구독",
+              "locale" : "ko_KR"
+            }
+          ],
+          "productID" : "com.tntlabs.catch.pro.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Catch Pro Monthly",
+          "subscriptionGroupID" : "31001",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
           "displayPrice" : "4.99",
           "familyShareable" : false,
           "groupNumber" : 1,
