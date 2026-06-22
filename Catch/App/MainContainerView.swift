@@ -1,8 +1,10 @@
 import SwiftUI
+import PhotosUI
 
 /// SETLOG식 메인 — camera / jar / friends 가로 스와이프 + Liquid Glass 바.
 struct MainContainerView: View {
     @EnvironmentObject private var auth: AuthService
+    @EnvironmentObject private var pro: ProStore
     @StateObject private var holder = SceneHolder()
     @StateObject private var camera = CameraController()
     // 촬영 플로우 상태는 컨테이너가 소유 — 페이저 자식 뷰 갱신이 막히지 않도록.
@@ -10,6 +12,11 @@ struct MainContainerView: View {
 
     // 스크롤 위치 = 단일 진실원천(표준 옵셔널 바인딩).
     @State private var page: CatchMode? = .jar
+
+    // 사진첩 피커도 컨테이너가 소유(페이저 자식 재렌더 한계 회피 — ScanRevealView와 동일).
+    @State private var showPhotoPicker = false
+    @State private var photoItem: PhotosPickerItem?
+    @State private var showPaywall = false
 
     private var capturing: Bool { flow.isCapturing }
 
@@ -21,7 +28,8 @@ struct MainContainerView: View {
             ScrollView(.horizontal) {
                 HStack(spacing: 0) {
                     pageView(.camera) {
-                        CameraFlowView(camera: camera, flow: flow, onClose: { goTo(.jar) })
+                        CameraFlowView(camera: camera, flow: flow, onClose: { goTo(.jar) },
+                                       onPickPhoto: { if pro.isPro { showPhotoPicker = true } else { showPaywall = true } })
                     }
                     pageView(.jar) {
                         HomeView(holder: holder).environmentObject(auth)
@@ -120,6 +128,18 @@ struct MainContainerView: View {
         .task { await camera.prepare() }
         .onChange(of: page, initial: true) { _, p in
             if p == .camera { camera.startSession() } else { camera.stopSession() }
+        }
+        // 사진첩 → 누끼: 컨테이너에서 피커 표시·로드 후 flow에 주입(자식 onChange 의존 제거).
+        .photosPicker(isPresented: $showPhotoPicker, selection: $photoItem, matching: .images)
+        .sheet(isPresented: $showPaywall) { PaywallView().environmentObject(pro) }
+        .onChange(of: photoItem) { _, item in
+            guard let item else { return }
+            Task {
+                defer { photoItem = nil }
+                guard let data = try? await item.loadTransferable(type: Data.self),
+                      let img = UIImage(data: data) else { return }
+                flow.capturePicked(img)
+            }
         }
     }
 

@@ -177,6 +177,13 @@ final class SceneHolder: ObservableObject {
         await reload(folderId: nil)
     }
 
+    /// 백업 복원 후 전체 새로고침.
+    func reloadAll() async {
+        await exitToRoot()
+        folders = await FolderRepository.shared.listMine()
+        await reload(folderId: nil)
+    }
+
     func reload(folderId: UUID?) async {
         scene.clearAll()
         byId.removeAll()
@@ -255,7 +262,10 @@ final class SceneHolder: ObservableObject {
 /// 메인(jar) — 물리 항아리 + 카운트 + 폴더 칩. 상/하단 바는 컨테이너가 그린다.
 struct HomeView: View {
     @EnvironmentObject private var auth: AuthService
+    @EnvironmentObject private var pro: ProStore
     @ObservedObject var holder: SceneHolder
+    @State private var showAbout = false
+    @State private var showPaywall = false
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -282,6 +292,11 @@ struct HomeView: View {
             await holder.loadMineIfNeeded()
         }
         // 폴더 추가/편집 시트·삭제 확인은 컨테이너(MainContainerView)에서.
+        .sheet(isPresented: $showAbout) {
+            SettingsView(onRestore: { Task { await holder.reloadAll() } })
+                .environmentObject(auth).environmentObject(pro)
+        }
+        .sheet(isPresented: $showPaywall) { PaywallView().environmentObject(pro) }
     }
 
     /// 그리드 보기 — 고정 크기 셀의 스크롤 격자(탭→포커스, 길게눌러 삭제).
@@ -360,6 +375,12 @@ struct HomeView: View {
                 }
                 Spacer()
                 HStack(spacing: 10) {
+                    // 개발자 소개 + Pro 시트
+                    Button { showAbout = true } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 18, weight: .semibold)).foregroundStyle(.white)
+                            .frame(width: 44, height: 44).liquidGlass(Circle(), interactive: true)
+                    }
                     // 보기 모드 — 누를 때마다 중력 ↔ 그리드
                     Button { holder.cycleMode() } label: {
                         Image(systemName: holder.mode.icon)
@@ -368,7 +389,11 @@ struct HomeView: View {
                     }
                     // 루트: 폴더 추가 / 폴더 안: 현재 폴더 편집
                     if holder.currentFolder == nil {
-                        Button { holder.beginCreateFolder() } label: {
+                        Button {
+                            if pro.isPro || holder.folders.count < ProStore.freeFolderLimit {
+                                holder.beginCreateFolder()
+                            } else { showPaywall = true }
+                        } label: {
                             Image(systemName: "plus")
                                 .font(.system(size: 18, weight: .semibold)).foregroundStyle(.white)
                                 .frame(width: 44, height: 44).liquidGlass(Circle(), interactive: true)

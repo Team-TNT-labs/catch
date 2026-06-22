@@ -42,8 +42,6 @@ struct EraseView: View {
                 VStack {
                     topBar
                     Spacer()
-                    Text("지우고 싶은 부분을 문질러요")
-                        .font(.footnote).foregroundStyle(.white.opacity(0.6))
                     bottomBar(displayWidth: rect.width)
                 }
                 .padding(.horizontal, 20)
@@ -121,7 +119,7 @@ struct EraseView: View {
             Button {
                 if let last = undo.popLast() { working = last }
             } label: {
-                Label("되돌리기", systemImage: "arrow.uturn.backward")
+                Image(systemName: "arrow.uturn.backward")
                     .foregroundStyle(undo.isEmpty ? .white.opacity(0.35) : .white)
             }
             .disabled(undo.isEmpty)
@@ -136,9 +134,9 @@ struct EraseView: View {
             Button {
                 onDone(working)
             } label: {
-                Text("완료").font(.headline).foregroundStyle(.black)
-                    .padding(.horizontal, 28).frame(height: 48)
-                    .background(Theme.lime, in: Capsule())
+                Image(systemName: "checkmark").font(.system(size: 18, weight: .bold)).foregroundStyle(.black)
+                    .frame(width: 48, height: 48)
+                    .background(Theme.lime, in: Circle())
             }
         }
     }

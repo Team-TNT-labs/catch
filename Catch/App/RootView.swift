@@ -3,6 +3,7 @@ import SwiftUI
 /// 세션 상태에 따라 화면을 분기한다. 가입(username 설정)해야 메인 진입.
 struct RootView: View {
     @StateObject private var auth = AuthService()
+    @StateObject private var pro = ProStore()
 
     var body: some View {
         ZStack {
@@ -15,7 +16,7 @@ struct RootView: View {
             case .needsUsername:
                 OnboardingUsernameView().environmentObject(auth)
             case .ready:
-                MainContainerView().environmentObject(auth)
+                MainContainerView().environmentObject(auth).environmentObject(pro)
             }
         }
         .tint(Theme.coral)

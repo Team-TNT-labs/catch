@@ -18,17 +18,21 @@ final class AuthService: ObservableObject {
     private let apple = AppleSignInCoordinator()
 
     init() {
-        // 동기적으로 즉시 결정 — 스플래시/무한로딩 없음.
-        if Supa.client.auth.currentSession != nil {
-            let cached = Self.cachedProfile()
-            profile = cached
-            // 로그인돼 있으면 기본 진입. 캐시가 'username 없음'을 명시할 때만 온보딩.
-            state = (cached != nil && !(cached!.hasUsername)) ? .needsUsername : .ready
-        } else {
-            state = .signedOut
-        }
+        // 로컬 앱: 로그인 없이 즉시 사용. 로컬 식별자 + 캐시/기본 프로필.
+        profile = Self.cachedProfile() ?? Profile(id: Self.localUserId, username: nil,
+                                                  displayName: nil, avatarUrl: nil, bio: nil)
+        state = .ready
         Task { await restore() }
     }
+
+    /// 로컬 사용자 식별자(로그인 없이 스티커 소유자/경로에 사용). 한 번 생성해 영속.
+    private static let localKey = "local_user_id"
+    static let localUserId: UUID = {
+        if let s = UserDefaults.standard.string(forKey: localKey), let id = UUID(uuidString: s) { return id }
+        let id = UUID()
+        UserDefaults.standard.set(id.uuidString, forKey: localKey)
+        return id
+    }()
 
     private static let cacheKey = "cached_profile"
     static func cachedProfile() -> Profile? {
@@ -44,11 +48,9 @@ final class AuthService: ObservableObject {
     }
 
     func restore() async {
-        guard let session = Supa.client.auth.currentSession else {
-            state = .signedOut
-            return
-        }
-        await loadProfile(userId: session.user.id)   // 백그라운드 갱신
+        // 로컬 앱: 세션 없으면 그대로 로컬 사용(.ready 유지). 세션 있으면 프로필 갱신.
+        guard let session = Supa.client.auth.currentSession else { return }
+        await loadProfile(userId: session.user.id)
     }
 
     func signInWithApple() async {
@@ -61,7 +63,7 @@ final class AuthService: ObservableObject {
         } catch is CancellationError {
             // 사용자가 취소
         } catch {
-            errorMessage = "로그인에 실패했어요. 다시 시도해주세요."
+            errorMessage = String(localized: "로그인에 실패했어요. 다시 시도해주세요.")
             state = .signedOut
         }
     }
@@ -102,7 +104,7 @@ final class AuthService: ObservableObject {
             await loadProfile(userId: userId)
             return state == .ready
         } catch {
-            errorMessage = "사용자명 저장에 실패했어요."
+            errorMessage = String(localized: "사용자명 저장에 실패했어요.")
             return false
         }
     }

@@ -4,6 +4,8 @@ options:
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
+  developmentLanguage: ko
+  knownRegions: [ko, en, ja, zh-Hans, es, fr, de]
 packages:
   Supabase:
     url: https://github.com/supabase/supabase-swift
@@ -33,6 +35,8 @@ targets:
       path: Catch/Info.plist
       properties:
         CFBundleDisplayName: Catch
+        CFBundleDevelopmentRegion: ko
+        CFBundleLocalizations: [ko, en, ja, zh-Hans, es, fr, de]
         UILaunchScreen: {}
         NSCameraUsageDescription: "스티커를 만들기 위해 카메라를 사용해요."
         UISupportedInterfaceOrientations:
@@ -62,6 +66,8 @@ schemes:
     build:
       targets:
         Catch: all
+    run:
+      storeKitConfiguration: Catch.storekit
     test:
       targets:
         - CatchTests

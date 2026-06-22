@@ -1,0 +1,61 @@
+{
+  "identifier" : "B2C3D4E5-0000-4000-8000-0000000000C1",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "7.99",
+      "familyShareable" : false,
+      "internalID" : "30011",
+      "localizations" : [
+        {
+          "description" : "한 번 결제로 모든 기능 평생 이용",
+          "displayName" : "평생 이용",
+          "locale" : "ko_KR"
+        }
+      ],
+      "productID" : "com.tntlabs.catch.pro.lifetime",
+      "referenceName" : "Catch Pro Lifetime",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "31001",
+      "localizations" : [],
+      "name" : "Catch Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "4.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "20011",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "매년 자동 갱신",
+              "displayName" : "연 구독",
+              "locale" : "ko_KR"
+            }
+          ],
+          "productID" : "com.tntlabs.catch.pro.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Catch Pro Yearly",
+          "subscriptionGroupID" : "31001",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

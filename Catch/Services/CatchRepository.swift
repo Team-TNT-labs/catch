@@ -61,8 +61,8 @@ final class CatchRepository {
     // MARK: - 촬영 직후: 로컬 즉시 저장
     @discardableResult
     func capture(image: UIImage) async throws -> CloudCatch {
-        // 로컬-퍼스트: 네트워크 동반 세션 대신 캐시된 로컬 세션 사용(멈춤 방지).
-        guard let uid = Supa.client.auth.currentSession?.user.id else { throw CatchError.notAuthed }
+        // 로컬 앱: 세션이 있으면 그 uid, 없으면 로컬 식별자로 소유.
+        let uid = Supa.client.auth.currentSession?.user.id ?? AuthService.localUserId
         let id = UUID()
         let uidStr = uid.uuidString.lowercased()
         let idStr = id.uuidString.lowercased()
@@ -254,5 +254,43 @@ final class CatchRepository {
         _ = try? await Supa.client.from("catches")
             .update(GroupAssign(group_id: nil))
             .eq("id", value: catchId.uuidString).execute()
+    }
+
+    // MARK: - 백업(Pro) — 단일 파일로 수집 전체 내보내기/불러오기
+    struct BackupBundle: Codable {
+        var version = 1
+        var catches: [CloudCatch]
+        var folders: [Folder]
+        var images: [String: String]   // 스토리지 경로 → base64(PNG)
+    }
+
+    /// 현재 수집(스티커+폴더+이미지)을 백업 데이터로 직렬화.
+    func exportBackup() async -> Data? {
+        let catches = loadLocal().map { $0.cloud }
+        let folders = await FolderRepository.shared.listMine()
+        var images: [String: String] = [:]
+        for c in catches {
+            for path in [c.imagePath, c.bodyPath].compactMap({ $0 }) where images[path] == nil {
+                if let d = try? Data(contentsOf: cacheURL(path)) { images[path] = d.base64EncodedString() }
+            }
+        }
+        return try? JSONEncoder().encode(BackupBundle(catches: catches, folders: folders, images: images))
+    }
+
+    /// 백업 데이터를 복원(기존 항목과 병합, 중복 id 제외).
+    @discardableResult
+    func importBackup(_ data: Data) async -> Bool {
+        guard let bundle = try? JSONDecoder().decode(BackupBundle.self, from: data) else { return false }
+        for (path, b64) in bundle.images {
+            if let d = Data(base64Encoded: b64) { try? d.write(to: cacheURL(path)) }
+        }
+        var local = loadLocal()
+        let existing = Set(local.map { $0.cloud.id })
+        for c in bundle.catches where !existing.contains(c.id) {
+            local.append(LocalCatch(cloud: c, synced: false))
+        }
+        saveLocal(local)
+        await FolderRepository.shared.restore(bundle.folders)
+        return true
     }
 }

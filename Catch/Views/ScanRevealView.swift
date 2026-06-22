@@ -39,6 +39,7 @@ struct ScanRevealView: View {
                         .resizable().scaledToFill()
                         .frame(width: w, height: h).clipped()
                         .mask(alignment: .top) { Rectangle().frame(height: h * reveal) }
+                        .opacity(finished ? 0 : 1)   // 완료 시 풀프레임 누끼는 사라지고 테두리 스티커만 검정 위에 남김
                 }
 
                 // 완료 순간 흰색 테두리 스티커가 가운데로 떠오름(잡으면 항아리에서 보일 모습 그대로).
@@ -131,32 +132,29 @@ struct ScanRevealView: View {
     }
 
     private var controls: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 18) {
             Spacer()
             // 누끼가 깔끔하지 않을 때 손으로 다듬기
             if subject != nil {
                 Button { withAnimation { editing = true } } label: {
-                    Label("다듬기", systemImage: "eraser")
-                        .font(.subheadline.weight(.semibold)).foregroundStyle(.white)
-                        .padding(.horizontal, 18).frame(height: 44)
-                        .background(.ultraThinMaterial, in: Capsule())
+                    Image(systemName: "eraser")
+                        .font(.system(size: 20, weight: .semibold)).foregroundStyle(.white)
+                        .frame(width: 52, height: 52).background(.ultraThinMaterial, in: Circle())
                 }
             }
-            HStack(spacing: 20) {
+            HStack(spacing: 30) {
                 Button(action: onRetake) {
-                    Label("다시찍기", systemImage: "arrow.counterclockwise")
-                        .font(.headline).foregroundStyle(.white)
-                        .frame(maxWidth: .infinity).frame(height: 56)
-                        .background(.ultraThinMaterial, in: Capsule())
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.system(size: 25, weight: .semibold)).foregroundStyle(.white)
+                        .frame(width: 72, height: 72).background(.ultraThinMaterial, in: Circle())
                 }
                 Button { onCatch(subject ?? cutout ?? original) } label: {
-                    Label("Catch", systemImage: "hand.raised.fill")
-                        .font(.headline).foregroundStyle(.black)
-                        .frame(maxWidth: .infinity).frame(height: 56)
-                        .background(Theme.lime, in: Capsule())
+                    Image(systemName: "hand.raised.fill")
+                        .font(.system(size: 27, weight: .bold)).foregroundStyle(.black)
+                        .frame(width: 72, height: 72).background(Theme.lime, in: Circle())
                 }
             }
-            .padding(.horizontal, 24).padding(.bottom, 44)
+            .padding(.bottom, 44)
         }
         .opacity(showControls ? 1 : 0)
         .offset(y: showControls ? 0 : 24)

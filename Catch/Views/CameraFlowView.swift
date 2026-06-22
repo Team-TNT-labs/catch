@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 /// 촬영 플로우 상태(촬영 사진/누끼/에러). View의 @State 대신 관찰 가능한 클래스로 둬,
 /// escaping Task 안에서의 상태 변경이 화면에 확실히 반영되게 한다.
@@ -25,9 +26,24 @@ final class CameraFlowModel: ObservableObject {
                 withAnimation(.easeInOut(duration: 0.2)) { captured = photo }
                 cutout = try await remover.removeBackground(from: photo)
             } catch BackgroundRemovalError.noSubject {
-                reset(); errorMessage = "피사체를 찾지 못했어요. 다시 찍어볼까요?"
+                reset(); errorMessage = String(localized: "피사체를 찾지 못했어요. 다시 찍어볼까요?")
             } catch {
-                reset(); errorMessage = "촬영 실패: \(error.localizedDescription)"
+                reset(); errorMessage = String(localized: "촬영 실패: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// 사진첩에서 고른 사진으로 스티커 만들기 — 촬영과 동일한 누끼 플로우.
+    func capturePicked(_ image: UIImage) {
+        Task {
+            do {
+                let photo = image.orientationNormalized()
+                withAnimation(.easeInOut(duration: 0.2)) { captured = photo }
+                cutout = try await remover.removeBackground(from: photo)
+            } catch BackgroundRemovalError.noSubject {
+                reset(); errorMessage = String(localized: "피사체를 찾지 못했어요. 다른 사진을 골라볼까요?")
+            } catch {
+                reset(); errorMessage = String(localized: "처리 실패: \(error.localizedDescription)")
             }
         }
     }
@@ -49,7 +65,7 @@ final class CameraFlowModel: ObservableObject {
                 reset()
                 onCatch(cloud)
             } else {
-                errorMessage = "저장에 실패했어요."
+                errorMessage = String(localized: "저장에 실패했어요.")
             }
         }
     }
@@ -65,6 +81,7 @@ struct CameraFlowView: View {
     @ObservedObject var camera: CameraController
     @ObservedObject var flow: CameraFlowModel
     var onClose: () -> Void
+    var onPickPhoto: () -> Void = {}   // 사진첩 피커는 컨테이너가 띄움(페이저 자식 재렌더 한계 회피)
 
     var body: some View {
         ZStack {
@@ -108,6 +125,15 @@ struct CameraFlowView: View {
                     .disabled(camera.status != .ready)
                     .opacity(camera.status == .ready ? 1 : 0.5)
                     HStack {
+                        // 셔터 왼쪽 — 사진첩에서 골라 바로 스티커로(피커는 컨테이너가 표시).
+                        Button { onPickPhoto() } label: {
+                            Image(systemName: "photo.on.rectangle")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(width: 52, height: 52)
+                                .liquidGlass(Circle(), interactive: true)
+                        }
+                        .padding(.leading, 40)
                         Spacer()
                         Button {
                             camera.flip()
