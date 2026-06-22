@@ -184,11 +184,14 @@ final class StickerScene: SKScene {
             physicsBody = nil
             return
         }
-        // 사방을 닫은 박스 — 스티커가 화면 밖으로 새어나가지 않게(특히 float/던지기).
-        let body = SKPhysicsBody(edgeLoopFrom: CGRect(x: 0, y: 0, width: size.width, height: size.height))
+        // 사방을 닫은 박스 — 천장을 상단 안전영역+상단바 아래로 낮춰 스티커가 노치/바에 걸리지 않게.
+        let body = SKPhysicsBody(edgeLoopFrom: CGRect(x: 0, y: 0, width: size.width, height: size.height - topInset))
         body.friction = 0.4
         physicsBody = body
     }
+
+    /// 물리 천장 인셋(상단 안전영역 + 상단바 여유).
+    private var topInset: CGFloat { deviceSafeAreaTop + 60 }
 
     // MARK: - Spawning
 
@@ -227,7 +230,7 @@ final class StickerScene: SKScene {
 
         let half = displaySize.width / 2
         node.position = CGPoint(x: .random(in: half...max(half, size.width - half)),
-                                y: size.height - displaySize.height)
+                                y: size.height - topInset - displaySize.height)
         node.zRotation = .random(in: -0.2...0.2)
         addChild(node)
     }
@@ -289,7 +292,7 @@ final class StickerScene: SKScene {
         let half = displaySize.width / 2
         let minX = half
         let maxX = max(half, size.width - half)
-        node.position = CGPoint(x: .random(in: minX...maxX), y: size.height - displaySize.height)
+        node.position = CGPoint(x: .random(in: minX...maxX), y: size.height - topInset - displaySize.height)
         node.zRotation = .random(in: -0.3...0.3)
         addChild(node)
     }
