@@ -41,13 +41,12 @@ targets:
         NSCameraUsageDescription: "스티커를 만들기 위해 카메라를 사용해요."
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-        UISupportedInterfaceOrientations~ipad:
-          - UIInterfaceOrientationPortrait
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tntlabs.catch
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"   # iPhone 전용
         CODE_SIGN_ENTITLEMENTS: Catch/Catch.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: catch   # Icon Composer catch.icon
   CatchTests:

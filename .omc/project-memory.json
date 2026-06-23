@@ -167,6 +167,12 @@
       "type": "file"
     },
     {
+      "path": "project.yml",
+      "accessCount": 3,
+      "lastAccessed": 1782221352601,
+      "type": "file"
+    },
+    {
       "path": "Catch/Services/ProStore.swift",
       "accessCount": 2,
       "lastAccessed": 1782122967793,
@@ -194,6 +200,12 @@
       "path": "Catch/Views/LegalView.swift",
       "accessCount": 1,
       "lastAccessed": 1782215959336,
+      "type": "file"
+    },
+    {
+      "path": "Catch/InfoPlist.xcstrings",
+      "accessCount": 1,
+      "lastAccessed": 1782221160711,
       "type": "file"
     }
   ],
