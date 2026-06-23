@@ -5,6 +5,7 @@ import PhotosUI
 struct MainContainerView: View {
     @EnvironmentObject private var auth: AuthService
     @EnvironmentObject private var pro: ProStore
+    @EnvironmentObject private var locales: LocaleManager
     @StateObject private var holder = SceneHolder()
     @StateObject private var camera = CameraController()
     // 촬영 플로우 상태는 컨테이너가 소유 — 페이저 자식 뷰 갱신이 막히지 않도록.
@@ -112,6 +113,7 @@ struct MainContainerView: View {
                 onDelete: { Task { await holder.deleteFolder(folder.id) } },
                 onClose: { holder.folderToEdit = nil }
             )
+            .environment(\.locale, locales.locale).id(locales.refresh)
         }
         // 꾹 눌러 삭제 확인 — 컨테이너 레벨(페이저 자식은 holder 변경에 재렌더 안 됨).
         .confirmationDialog(
@@ -131,7 +133,18 @@ struct MainContainerView: View {
         }
         // 사진첩 → 누끼: 컨테이너에서 피커 표시·로드 후 flow에 주입(자식 onChange 의존 제거).
         .photosPicker(isPresented: $showPhotoPicker, selection: $photoItem, matching: .images)
-        .sheet(isPresented: $showPaywall) { PaywallView().environmentObject(pro) }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView().environmentObject(pro)
+                .environment(\.locale, locales.locale).id(locales.refresh)
+        }
+        // 설정(개발자 소개+Pro) — 페이저 자식(HomeView) 대신 컨테이너에서 표시(시트 안정).
+        // ⚠️ 시트는 새 환경 계층이라 루트의 .environment(\.locale)가 닿지 않는다 → 여기서 직접 주입(언어 전환 반영).
+        .sheet(isPresented: $holder.showSettings) {
+            SettingsView(onRestore: { Task { await holder.reloadAll() } },
+                         onBackgroundChange: { holder.scene.refreshBackground() })
+                .environmentObject(auth).environmentObject(pro).environmentObject(locales)
+                .environment(\.locale, locales.locale).id(locales.refresh)
+        }
         .onChange(of: photoItem) { _, item in
             guard let item else { return }
             Task {

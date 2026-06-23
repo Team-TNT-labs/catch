@@ -4,6 +4,7 @@ import SwiftUI
 struct RootView: View {
     @StateObject private var auth = AuthService()
     @StateObject private var pro = ProStore()
+    @StateObject private var locales = LocaleManager()
 
     var body: some View {
         ZStack {
@@ -16,9 +17,11 @@ struct RootView: View {
             case .needsUsername:
                 OnboardingUsernameView().environmentObject(auth)
             case .ready:
-                MainContainerView().environmentObject(auth).environmentObject(pro)
+                MainContainerView().environmentObject(auth).environmentObject(pro).environmentObject(locales)
             }
         }
+        .id(locales.refresh)                       // 언어 변경 시 전체 재구성
+        .environment(\.locale, locales.locale)
         .tint(Theme.coral)
         .preferredColorScheme(.dark)
         .animation(.easeInOut(duration: 0.25), value: auth.state)

@@ -1,14 +1,19 @@
 import SwiftUI
 import StoreKit
 
+/// took식 페이월 — 헤더 / 기능 카드 / 플랜 카드 / 구매·복원·약관.
 struct PaywallView: View {
     @EnvironmentObject private var pro: ProStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.locale) private var locale
     @State private var selected: Product?
+    @State private var working = false
+    @State private var legalDoc: LegalDoc?
 
-    private let perks: [(String, String)] = [
-        ("photo.on.rectangle", "사진앨범에서 불러오기"),
-        ("folder.fill.badge.plus", "폴더 무제한 (무료 7개까지)"),
+    private let features: [(String, String)] = [
+        ("photo.on.rectangle", "사진앨범에서 스티커 가져오기"),
+        ("folder.fill.badge.plus", "폴더 무제한 (무료는 7개까지)"),
+        ("paintbrush.fill", "배경 꾸미기"),
         ("icloud.and.arrow.up.fill", "수집 백업 & 복원"),
     ]
 
@@ -17,25 +22,23 @@ struct PaywallView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     header
-                    VStack(spacing: 14) {
-                        ForEach(perks, id: \.0) { perk($0.0, $0.1) }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    featureList
                     planList
-                    purchaseButton
-                    Button { Task { await pro.restore(); if pro.isPro { dismiss() } } } label: {
-                        Text("구매 복원").font(.footnote).foregroundStyle(Theme.muted)
+                    VStack(spacing: 12) {
+                        purchaseButton
+                        restoreButton
+                        legalLinks
+                        footnote
                     }
-                    legalLinks
-                    footnote
                 }
-                .padding(24)
+                .padding(20)
             }
-            .background(Color.black.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
+            .background(backdrop)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { dismiss() } label: { Image(systemName: "xmark").foregroundStyle(Theme.muted) }
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.muted)
+                    }
                 }
             }
         }
@@ -46,38 +49,49 @@ struct PaywallView: View {
 
     private var defaultPlan: Product? { pro.yearly ?? pro.lifetime ?? pro.products.first }
 
-    private func planTitle(_ id: String) -> LocalizedStringKey {
-        if id == ProStore.monthlyID { return "월 구독" }
-        if id == ProStore.yearlyID { return "연 구독" }
-        return "평생 이용"
-    }
-    private func planSubtitle(_ id: String) -> LocalizedStringKey {
-        if id == ProStore.monthlyID { return "매월 자동 갱신" }
-        if id == ProStore.yearlyID { return "가장 인기 · 매년 자동 갱신" }
-        return "한 번 결제로 평생"
+    private var backdrop: some View {
+        ZStack {
+            Color.black
+            LinearGradient(colors: [Theme.lime.opacity(0.18), .clear], startPoint: .top, endPoint: .center)
+        }
+        .ignoresSafeArea()
     }
 
     private var header: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "crown.fill").font(.system(size: 46)).foregroundStyle(Theme.lime).padding(.top, 12)
+        VStack(spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(Theme.lime.opacity(0.16))
+                    .frame(width: 88, height: 88)
+                Image(systemName: "crown.fill").font(.system(size: 40)).foregroundStyle(Theme.lime)
+            }
             Text("Catch Pro").font(.largeTitle.bold()).foregroundStyle(Theme.ink)
-            Text("Catch를 더 자유롭게").font(.subheadline).foregroundStyle(Theme.muted)
+            Text("수집을 더 자유롭게, 더 멋지게.").font(.subheadline).foregroundStyle(Theme.muted)
         }
+        .padding(.top, 8)
     }
 
-    private func perk(_ icon: String, _ text: String) -> some View {
-        HStack(spacing: 14) {
-            Image(systemName: icon).font(.system(size: 20)).foregroundStyle(Theme.lime).frame(width: 30)
-            Text(text).font(.body.weight(.medium)).foregroundStyle(Theme.ink)
-            Spacer()
+    private var featureList: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(features, id: \.1) { icon, text in
+                HStack(spacing: 12) {
+                    Image(systemName: icon).font(.headline).foregroundStyle(Theme.lime).frame(width: 26)
+                    Text(LocalizedStringKey(text)).font(.subheadline.weight(.medium)).foregroundStyle(Theme.ink)
+                    Spacer()
+                }
+            }
         }
+        .padding(18)
+        .background(Theme.surface.opacity(0.5), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
-
-    // MARK: - Plans
 
     private var planList: some View {
         VStack(spacing: 10) {
-            ForEach(pro.products, id: \.id) { planRow($0) }
+            if pro.products.isEmpty {
+                ProgressView().tint(Theme.lime).padding()
+            } else {
+                ForEach(pro.products, id: \.id) { planRow($0) }
+            }
         }
     }
 
@@ -86,49 +100,76 @@ struct PaywallView: View {
         return Button { selected = product } label: {
             HStack(spacing: 12) {
                 Image(systemName: isSel ? "largecircle.fill.circle" : "circle")
-                    .foregroundStyle(isSel ? Theme.lime : Theme.muted)
+                    .font(.title3).foregroundStyle(isSel ? Theme.lime : Theme.muted)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(planTitle(product.id)).font(.headline).foregroundStyle(Theme.ink)
-                    Text(planSubtitle(product.id))
-                        .font(.caption).foregroundStyle(Theme.muted)
+                    Text(planTitle(product)).font(.headline).foregroundStyle(Theme.ink)
+                    if let sub = planSubtitle(product) {
+                        Text(sub).font(.caption).foregroundStyle(Theme.muted)
+                    }
                 }
                 Spacer()
-                Text(product.displayPrice).font(.headline.bold()).foregroundStyle(Theme.ink)
+                Text(product.displayPrice).font(.headline).foregroundStyle(Theme.ink)
             }
             .padding(16)
-            .background(Theme.surface.opacity(isSel ? 0.9 : 0.4), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(Theme.surface.opacity(isSel ? 0.8 : 0.4), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(isSel ? Theme.lime : .clear, lineWidth: 2))
         }
         .buttonStyle(.plain)
     }
 
+    private func planTitle(_ product: Product) -> LocalizedStringKey {
+        if product.id.contains("monthly") { return "월 구독" }
+        if product.id.contains("yearly") { return "연 구독" }
+        return "평생 이용"
+    }
+
+    private func planSubtitle(_ product: Product) -> LocalizedStringKey? {
+        if product.id.contains("yearly") { return "가장 인기 · 월 구독보다 저렴" }
+        if product.id.contains("lifetime") { return "한 번 결제로 평생" }
+        return nil
+    }
+
+    private var purchaseButton: some View {
+        Button {
+            guard let product = selected else { return }
+            working = true
+            Task { _ = await pro.purchase(product); working = false; if pro.isPro { dismiss() } }
+        } label: {
+            Group {
+                if working { ProgressView().tint(.black) }
+                else {
+                    let key: LocalizedStringKey = selected?.id.contains("lifetime") == true ? "구매하기" : "구독 시작하기"
+                    Text(key)
+                }
+            }
+            .font(.headline).foregroundStyle(.black)
+            .frame(maxWidth: .infinity).padding(.vertical, 16)
+            .background(Theme.lime, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(selected == nil || working)
+        .opacity(selected == nil ? 0.5 : 1)
+    }
+
+    private var restoreButton: some View {
+        Button("구매 복원") { Task { await pro.restore(); if pro.isPro { dismiss() } } }
+            .font(.subheadline).foregroundStyle(Theme.muted)
+    }
+
     private var legalLinks: some View {
         HStack(spacing: 8) {
-            Link("이용약관", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+            Button("이용약관") { legalDoc = .terms }
             Text("·").foregroundStyle(Theme.muted.opacity(0.6))
-            Link("개인정보처리방침", destination: URL(string: "https://catch.gojaehyun.com/privacy.html")!)
+            Button("개인정보처리방침") { legalDoc = .privacy }
         }
         .font(.caption2.weight(.medium)).foregroundStyle(Theme.muted)
+        .sheet(item: $legalDoc) { doc in LegalView(doc: doc).environment(\.locale, locale) }
     }
 
     private var footnote: some View {
         Text("구독은 기간이 끝나기 전 취소하지 않으면 자동 갱신됩니다. 언제든 설정 > Apple ID에서 관리할 수 있어요.")
             .font(.caption2).foregroundStyle(Theme.muted.opacity(0.7))
             .multilineTextAlignment(.center)
-    }
-
-    @ViewBuilder private var purchaseButton: some View {
-        Button { if let s = selected { Task { await pro.purchase(s) } } } label: {
-            Group {
-                if pro.purchasing { ProgressView().tint(.black) }
-                else if selected?.id == ProStore.lifetimeID { Text("평생 이용 구매") }
-                else { Text("구독 시작하기") }
-            }
-            .font(.headline).foregroundStyle(.black)
-            .frame(maxWidth: .infinity).frame(height: 54)
-            .background(Theme.lime, in: Capsule())
-        }
-        .disabled(pro.purchasing || selected == nil)
     }
 }

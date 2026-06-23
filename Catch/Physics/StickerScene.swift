@@ -122,6 +122,8 @@ final class StickerScene: SKScene {
     override func update(_ currentTime: TimeInterval) {
         let maxAngular: CGFloat = 4.0
         let maxSpeed: CGFloat = 1400
+        // 상단 천장(안전영역+상단바 아래). 물리 벽이 아니라 위치만 부드럽게 눌러 노치/바에 안 걸리게.
+        let ceiling = size.height - (deviceSafeAreaTop + 54)
         for case let node as SKSpriteNode in children {
             guard let b = node.physicsBody, node !== draggedNode else { continue }
             if abs(b.angularVelocity) > maxAngular {
@@ -132,6 +134,12 @@ final class StickerScene: SKScene {
             if speed > maxSpeed {
                 let r = maxSpeed / speed
                 b.velocity = CGVector(dx: v.dx * r, dy: v.dy * r)
+            }
+            // 천장 위로 올라가면 끌어내리고 상승 속도 제거(스티커/폴더 모두).
+            let topY = node.position.y + node.size.height / 2
+            if ceiling > 0, topY > ceiling {
+                node.position.y = ceiling - node.size.height / 2
+                if b.velocity.dy > 0 { b.velocity.dy = 0 }
             }
         }
     }
@@ -157,12 +165,34 @@ final class StickerScene: SKScene {
         barrierNode = node
     }
 
+    /// 배경 설정(Pro: 단색/사진)이 바뀌면 호출 — 항아리 배경 즉시 갱신.
+    func refreshBackground() { rebuildBackground() }
+
     private func rebuildBackground() {
         if plainBackground { bgNode?.removeFromParent(); bgNode = nil; backgroundColor = .black; return }
         guard size.width > 1, size.height > 1 else { return }
         bgNode?.removeFromParent()
-        let renderer = UIGraphicsImageRenderer(size: size)
-        let image = renderer.image { ctx in
+        bgNode = nil
+
+        let store = JarBackgroundStore.shared
+        // 1) 사진 배경(aspect-fill).
+        if let photo = store.photo {
+            let filled = UIGraphicsImageRenderer(size: size).image { _ in
+                let s = max(size.width / photo.size.width, size.height / photo.size.height)
+                let w = photo.size.width * s, h = photo.size.height * s
+                photo.draw(in: CGRect(x: (size.width - w) / 2, y: (size.height - h) / 2, width: w, height: h))
+            }
+            addBackgroundNode(filled)
+            return
+        }
+        // 2) 단색 배경.
+        if let color = store.uiColor {
+            backgroundColor = color
+            return
+        }
+        // 3) 기본 그라데이션.
+        backgroundColor = Theme.sceneTop
+        let image = UIGraphicsImageRenderer(size: size).image { ctx in
             let cg = ctx.cgContext
             let colors = [Theme.sceneTop.cgColor, Theme.sceneBottom.cgColor] as CFArray
             guard let grad = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
@@ -170,6 +200,10 @@ final class StickerScene: SKScene {
             cg.drawLinearGradient(grad, start: CGPoint(x: 0, y: 0),
                                   end: CGPoint(x: 0, y: size.height), options: [])
         }
+        addBackgroundNode(image)
+    }
+
+    private func addBackgroundNode(_ image: UIImage) {
         let node = SKSpriteNode(texture: SKTexture(image: image))
         node.anchorPoint = .zero
         node.position = .zero
@@ -184,16 +218,11 @@ final class StickerScene: SKScene {
             physicsBody = nil
             return
         }
-        // 사방을 닫은 박스 — 천장을 상단 안전영역+상단바 아래로 낮춰 스티커가 노치/바에 걸리지 않게.
-        let body = SKPhysicsBody(edgeLoopFrom: CGRect(x: 0, y: 0, width: size.width, height: ceilingY))
+        // 사방을 닫은 박스(검증된 형태).
+        let body = SKPhysicsBody(edgeLoopFrom: CGRect(x: 0, y: 0, width: size.width, height: size.height))
         body.friction = 0.4
         physicsBody = body
     }
-
-    /// 물리 천장 인셋(상단 안전영역 + 상단바 여유).
-    private var topInset: CGFloat { deviceSafeAreaTop + 60 }
-    /// 천장 Y — 항상 양수로 클램프(레이아웃 순간 size가 작아도 벽이 깨지지 않게).
-    private var ceilingY: CGFloat { max(size.height * 0.5, size.height - topInset) }
 
     // MARK: - Spawning
 
@@ -232,7 +261,7 @@ final class StickerScene: SKScene {
 
         let half = displaySize.width / 2
         node.position = CGPoint(x: .random(in: half...max(half, size.width - half)),
-                                y: ceilingY - displaySize.height)
+                                y: size.height - displaySize.height)
         node.zRotation = .random(in: -0.2...0.2)
         addChild(node)
     }
@@ -294,7 +323,7 @@ final class StickerScene: SKScene {
         let half = displaySize.width / 2
         let minX = half
         let maxX = max(half, size.width - half)
-        node.position = CGPoint(x: .random(in: minX...maxX), y: ceilingY - displaySize.height)
+        node.position = CGPoint(x: .random(in: minX...maxX), y: size.height - displaySize.height)
         node.zRotation = .random(in: -0.3...0.3)
         addChild(node)
     }

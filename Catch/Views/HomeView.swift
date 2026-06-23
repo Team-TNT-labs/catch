@@ -34,6 +34,7 @@ final class SceneHolder: ObservableObject {
 
     func isCreating(_ folder: Folder) -> Bool { creatingFolderId == folder.id }
     @Published var ejectHovering = false      // 폴더 안: 스티커가 뒤로가기 위에 올라옴
+    @Published var showSettings = false       // 상단 ellipsis → 설정 시트(컨테이너에서 표시)
 
     var isGrid: Bool { mode == .grid }
 
@@ -274,7 +275,6 @@ struct HomeView: View {
     @EnvironmentObject private var auth: AuthService
     @EnvironmentObject private var pro: ProStore
     @ObservedObject var holder: SceneHolder
-    @State private var showAbout = false
     @State private var showPaywall = false
 
     var body: some View {
@@ -302,10 +302,6 @@ struct HomeView: View {
             await holder.loadMineIfNeeded()
         }
         // 폴더 추가/편집 시트·삭제 확인은 컨테이너(MainContainerView)에서.
-        .sheet(isPresented: $showAbout) {
-            SettingsView(onRestore: { Task { await holder.reloadAll() } })
-                .environmentObject(auth).environmentObject(pro)
-        }
         .sheet(isPresented: $showPaywall) { PaywallView().environmentObject(pro) }
     }
 
@@ -385,11 +381,13 @@ struct HomeView: View {
                 }
                 Spacer()
                 HStack(spacing: 10) {
-                    // 개발자 소개 + Pro 시트
-                    Button { showAbout = true } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 18, weight: .semibold)).foregroundStyle(.white)
-                            .frame(width: 44, height: 44).liquidGlass(Circle(), interactive: true)
+                    // 개발자 소개 + Pro 시트 (루트에서만 — 폴더 안엔 폴더 편집 ellipsis가 따로 있음)
+                    if holder.currentFolder == nil {
+                        Button { holder.showSettings = true } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 18, weight: .semibold)).foregroundStyle(.white)
+                                .frame(width: 44, height: 44).liquidGlass(Circle(), interactive: true)
+                        }
                     }
                     // 보기 모드 — 누를 때마다 중력 ↔ 그리드
                     Button { holder.cycleMode() } label: {
