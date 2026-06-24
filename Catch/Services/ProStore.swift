@@ -59,7 +59,11 @@ final class ProStore: ObservableObject {
     }
 
     func refreshEntitlement() async {
-        var pro = UserDefaults.standard.bool(forKey: Self.devKey)
+        #if DEBUG
+        var pro = UserDefaults.standard.bool(forKey: Self.devKey)   // 개발자 테스트 잠금해제(디버그 전용)
+        #else
+        var pro = false   // 릴리즈: 개발자 백도어 완전 비활성(결제 우회 방지)
+        #endif
         for await result in Transaction.currentEntitlements {
             if case .verified(let t) = result, Self.productIDs.contains(t.productID), t.revocationDate == nil {
                 pro = true

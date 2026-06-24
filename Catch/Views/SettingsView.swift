@@ -197,13 +197,15 @@ struct DeveloperView: View {
                 .clipShape(Circle())
                 .overlay(Circle().strokeBorder(Color.white.opacity(0.1), lineWidth: 1))
                 .contentShape(Circle())
-                .onTapGesture {   // 이스터에그: 5번 탭마다 Pro 활성 ↔ 비활성 토글
+                .onTapGesture {   // 이스터에그: 5번 탭마다 Pro 활성 ↔ 비활성 토글 (디버그 전용)
+                    #if DEBUG
                     taps += 1
                     if taps >= 5 {
                         taps = 0
                         devOn = pro.toggleDevPro()
                         showDevAlert = true
                     }
+                    #endif
                 }
                 .sensoryFeedback(.impact, trigger: taps)
             Text("Gojaehyun").font(.title.bold()).foregroundStyle(Theme.ink)

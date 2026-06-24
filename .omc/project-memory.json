@@ -150,20 +150,26 @@
   "hotPaths": [
     {
       "path": "Catch/Views/SettingsView.swift",
-      "accessCount": 19,
-      "lastAccessed": 1782215996023,
+      "accessCount": 21,
+      "lastAccessed": 1782317542680,
       "type": "file"
     },
     {
       "path": "Catch/Views/PaywallView.swift",
-      "accessCount": 6,
-      "lastAccessed": 1782216107100,
+      "accessCount": 10,
+      "lastAccessed": 1782312065932,
       "type": "file"
     },
     {
       "path": "Catch/App/MainContainerView.swift",
-      "accessCount": 5,
-      "lastAccessed": 1782124021970,
+      "accessCount": 8,
+      "lastAccessed": 1782312257615,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/ProStore.swift",
+      "accessCount": 4,
+      "lastAccessed": 1782317332361,
       "type": "file"
     },
     {
@@ -173,15 +179,15 @@
       "type": "file"
     },
     {
-      "path": "Catch/Services/ProStore.swift",
-      "accessCount": 2,
-      "lastAccessed": 1782122967793,
-      "type": "file"
-    },
-    {
       "path": "Catch/App/RootView.swift",
       "accessCount": 2,
       "lastAccessed": 1782123217297,
+      "type": "file"
+    },
+    {
+      "path": "Catch/Services/CameraController.swift",
+      "accessCount": 2,
+      "lastAccessed": 1782312432041,
       "type": "file"
     },
     {
