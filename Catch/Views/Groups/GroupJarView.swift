@@ -129,7 +129,7 @@ struct GroupJarView: View {
             }
         }
         .task {
-            holder.scene.toolbarBarrier = (width: 226, height: 72, bottomMargin: deviceSafeAreaBottom + 6)
+            holder.scene.toolbarBarrier = (width: SetlogBottomBar.pillWidth, height: SetlogBottomBar.pillHeight, bottomMargin: deviceSafeAreaBottom + 6)
             await holder.loadIfNeeded()
         }
         .sheet(isPresented: $showEdit) { GroupEditView(existing: group) { await holder.reload() } }

@@ -298,7 +298,8 @@ struct HomeView: View {
         .animation(.easeInOut(duration: 0.45), value: holder.isGrid)
         .task {
             // 하단 커스텀 툴바(가운데 알약) 충돌 바디 설정 — 스티커가 바에 안 가려지게.
-            holder.scene.toolbarBarrier = (width: 226, height: 72, bottomMargin: deviceSafeAreaBottom + 6)
+            // 실제 보이는 알약 치수(SetlogBottomBar)에서 계산 → 탭 수가 바뀌어도 자동 정렬.
+            holder.scene.toolbarBarrier = (width: SetlogBottomBar.pillWidth, height: SetlogBottomBar.pillHeight, bottomMargin: deviceSafeAreaBottom + 6)
             await holder.loadMineIfNeeded()
         }
         // 폴더 추가/편집 시트·삭제 확인은 컨테이너(MainContainerView)에서.

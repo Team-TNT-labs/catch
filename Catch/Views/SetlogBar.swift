@@ -23,6 +23,19 @@ enum CatchMode: String, CaseIterable {
 /// 완전 커스텀 하단 바 — 다크 알약 + 테마 라임 라인 + 하찮은 아이콘.
 /// 탭으로 전환, 바 위에서 드래그해도 전환(iOS 26 탭바처럼).
 struct SetlogBottomBar: View {
+    // ── 외형 치수 ── 물리 바리어를 실제 보이는 알약과 정확히 맞추는 데 쓴다.
+    static let segW: CGFloat = 62
+    static let segH: CGFloat = 48
+    static let segGap: CGFloat = 6
+    static let barPadding: CGFloat = 8
+    /// 보이는 알약 전체 폭 = 세그먼트들 + 간격 + 좌우 패딩 (활성 탭 수 기준 자동 계산).
+    static var pillWidth: CGFloat {
+        let n = CGFloat(CatchMode.allCases.count)
+        return n * segW + max(0, n - 1) * segGap + barPadding * 2
+    }
+    /// 보이는 알약 전체 높이 = 세그먼트 높이 + 상하 패딩.
+    static var pillHeight: CGFloat { segH + barPadding * 2 }
+
     @Binding var selection: CatchMode?
 
     @Namespace private var seg
@@ -30,10 +43,10 @@ struct SetlogBottomBar: View {
     private let modes = CatchMode.allCases
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Self.segGap) {
             ForEach(modes, id: \.self) { segment($0) }
         }
-        .padding(8)
+        .padding(Self.barPadding)
         .background(Capsule().fill(Color.black.opacity(0.9)))
         .overlay(Capsule().strokeBorder(Theme.lime, lineWidth: 2.5))   // 테마 라임 라인
         .background(
@@ -60,7 +73,7 @@ struct SetlogBottomBar: View {
         return Image(systemName: value.icon)
             .font(.system(size: 21, weight: .bold))
             .foregroundStyle(selected ? .black : Theme.lime)
-            .frame(width: 62, height: 48)
+            .frame(width: Self.segW, height: Self.segH)
             .background {
                 if selected {
                     Capsule().fill(Theme.lime)
