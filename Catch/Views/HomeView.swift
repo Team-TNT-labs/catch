@@ -351,7 +351,8 @@ struct HomeView: View {
             .padding(.bottom, deviceSafeAreaBottom + 96)
         }
         .scrollIndicators(.hidden)
-        .background(Color.black.ignoresSafeArea())
+        // 검정 대신 항아리 배경(사진/단색/기본)을 깔아 Pro 배경이 그리드에서도 유지되게 한다.
+        .background(JarBackdrop())
     }
 
     private var topBar: some View {
@@ -458,5 +459,30 @@ struct FocusedStickerView: View {
         .onAppear {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) { appear = true }
         }
+    }
+}
+
+/// 그리드 보기 배경 — 항아리 배경(사진/단색/기본 그라데이션)을 그대로 깔아 물리 씬을 덮는다.
+/// StickerScene.rebuildBackground와 동일한 우선순위(사진 → 단색 → 기본 그라데이션). (Android jarBackground 대응)
+struct JarBackdrop: View {
+    @ObservedObject private var store = JarBackgroundStore.shared
+
+    var body: some View {
+        Group {
+            if let photo = store.photo {
+                GeometryReader { geo in
+                    Image(uiImage: photo)
+                        .resizable().scaledToFill()
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .clipped()
+                }
+            } else if let color = store.uiColor {
+                Color(color)
+            } else {
+                LinearGradient(colors: [Color(Theme.sceneTop), Color(Theme.sceneBottom)],
+                               startPoint: .top, endPoint: .bottom)
+            }
+        }
+        .ignoresSafeArea()
     }
 }
