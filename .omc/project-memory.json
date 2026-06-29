@@ -126,8 +126,14 @@
   "hotPaths": [
     {
       "path": "Catch/Views/HomeView.swift",
-      "accessCount": 2,
-      "lastAccessed": 1782719597175,
+      "accessCount": 4,
+      "lastAccessed": 1782730803543,
+      "type": "file"
+    },
+    {
+      "path": "Catch/App/RootView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1782730428639,
       "type": "file"
     }
   ],

@@ -134,6 +134,10 @@ final class SceneHolder: ObservableObject {
         ejectHovering = false
         navCollapsing = true        // 뒤로가기 = 축소
         navAnchor = .center         // 축소는 화면 가운데를 중심으로 빨려들어감
+        if let f = currentFolder {  // 폴더 안에서 모양/색을 바꿨을 수 있으니 떠나는 시점 값으로 다시 읽음
+            navShape = FolderShape.resolve(f.shape, id: f.id)
+            navColor = FolderPalette.color(f.color)
+        }
         currentFolder = nil
         navToken += 1
         try? await Task.sleep(nanoseconds: Self.revealCoverNanos)
