@@ -315,17 +315,11 @@ struct HomeView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-
             // 폴더색 뚜껑 — 탭한 폴더에서 그 모양대로 자라 덮은 뒤(뒤에서 내용 교체) 걷힌다.
-            if reveal < 0.999 {
-                FolderRevealShape(shape: holder.navShape, anchor: holder.navAnchor,
-                                  progress: min(1, reveal / revealCoverFrac))
-                    .fill(holder.navColor)
-                    .opacity(reveal < revealFadeStart ? 1
-                             : Double(max(0, 1 - (reveal - revealFadeStart) / (1 - revealFadeStart))))
-                    .ignoresSafeArea()
-                    .allowsHitTesting(true)   // 전환 중 터치 흡수
-            }
+            // Animatable 모디파이어라 매 프레임 body가 불려, 덮기/페이드 단계 계산이 정확히 적용된다.
+            .modifier(FolderRevealLid(
+                shape: holder.navShape, anchor: holder.navAnchor, color: holder.navColor,
+                t: reveal, coverFrac: revealCoverFrac, fadeStart: revealFadeStart))
 
             topBar
                 .padding(.top, deviceSafeAreaTop + 4)
@@ -556,5 +550,36 @@ struct FolderRevealShape: Shape {
         let half = max(1, corner * shape.coverFactor * progress)
         let box = CGRect(x: cx - half, y: cy - half, width: half * 2, height: half * 2)
         return Path(shape.path(in: box).cgPath)
+    }
+}
+
+/// 폴더 전환 '뚜껑' — t(0→1)에 따라 폴더색 도형이 [0,coverFrac]에서 화면을 덮고
+/// [fadeStart,1]에서 페이드아웃. Animatable이라 매 프레임 body가 호출돼 단계 타이밍이 정확하다.
+/// (Shape에 piecewise 로직을 직접 두면 SwiftUI가 끝값만 평가해 '덮고 나서 페이드'가 안 됨.)
+private struct FolderRevealLid: ViewModifier, Animatable {
+    let shape: FolderShape
+    let anchor: UnitPoint
+    let color: Color
+    var t: CGFloat
+    let coverFrac: CGFloat
+    let fadeStart: CGFloat
+
+    var animatableData: CGFloat {
+        get { t }
+        set { t = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        let coverP = min(1, t / coverFrac)
+        let alpha: Double = t < fadeStart ? 1 : Double(max(0, 1 - (t - fadeStart) / (1 - fadeStart)))
+        return content.overlay {
+            if t < 0.999 {
+                FolderRevealShape(shape: shape, anchor: anchor, progress: coverP)
+                    .fill(color)
+                    .opacity(alpha)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(true)   // 전환 중 터치 흡수
+            }
+        }
     }
 }
