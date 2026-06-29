@@ -1,0 +1,17 @@
+{
+  "agents": [
+    {
+      "agent_id": "aDesignDiff-24b53e8896895e8d",
+      "agent_type": "DesignDiff",
+      "started_at": "2026-06-26T05:09:57.855Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-06-26T05:10:59.167Z",
+      "duration_ms": 61312
+    }
+  ],
+  "total_spawned": 1,
+  "total_completed": 9,
+  "total_failed": 0,
+  "last_updated": "2026-06-26T05:17:10.916Z"
+}

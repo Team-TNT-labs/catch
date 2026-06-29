@@ -132,7 +132,8 @@ final class SceneHolder: ObservableObject {
     func exitToRoot() async {
         scene.ejectEnabled = false
         ejectHovering = false
-        navCollapsing = true        // 뒤로가기 = 축소(떠나는 폴더 모양/색/위치로 빨려들어감)
+        navCollapsing = true        // 뒤로가기 = 축소
+        navAnchor = .center         // 축소는 화면 가운데를 중심으로 빨려들어감
         currentFolder = nil
         navToken += 1
         try? await Task.sleep(nanoseconds: Self.revealCoverNanos)

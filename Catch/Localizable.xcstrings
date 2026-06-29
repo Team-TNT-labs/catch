@@ -4,6 +4,15 @@
     "·" : {
       "shouldTranslate" : false
     },
+    "@" : {
+
+    },
+    "%@" : {
+
+    },
+    "%@  " : {
+
+    },
     "%@으로 평생 잠금 해제" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -88,6 +97,9 @@
           }
         }
       }
+    },
+    "+%@" : {
+
     },
     "a-z, 0-9, _ · 2–20자" : {
       "localizations" : {
@@ -465,22 +477,16 @@
     "Connect with Apple" : {
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mit Apple anmelden"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Connect with Apple"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Appleでサインイン"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "通过 Apple 登录"
           }
         },
         "es" : {
@@ -495,10 +501,16 @@
             "value" : "Se connecter avec Apple"
           }
         },
-        "de" : {
+        "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mit Apple anmelden"
+            "value" : "Appleでサインイン"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通过 Apple 登录"
           }
         }
       }
@@ -509,22 +521,16 @@
     "having trouble signing in?" : {
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Probleme bei der Anmeldung?"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "having trouble signing in?"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サインインできませんか？"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "登录遇到问题？"
           }
         },
         "es" : {
@@ -539,10 +545,16 @@
             "value" : "un problème pour vous connecter ?"
           }
         },
-        "de" : {
+        "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Probleme bei der Anmeldung?"
+            "value" : "サインインできませんか？"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录遇到问题？"
           }
         }
       }
@@ -1529,6 +1541,9 @@
           }
         }
       }
+    },
+    "댓글 %@개 모두 보기" : {
+
     },
     "댓글 %lld개 모두 보기" : {
       "extractionState" : "stale",
