@@ -332,9 +332,13 @@ struct HomeView: View {
         }
         .animation(.easeInOut(duration: 0.45), value: holder.isGrid)
         // 폴더 진입/이탈마다 뚜껑이 0 → 1로 천천히 자랐다 걷힌다.
+        // reveal=0과 withAnimation을 같은 트랜잭션에 두면 SwiftUI가 합쳐 1→1로 보고 애니메이션이
+        // 아예 안 돈다. 0을 먼저 커밋(한 프레임)한 뒤 다음 런루프에서 1로 애니메이트해야 한다.
         .onChange(of: holder.navToken) { _, _ in
             reveal = 0
-            withAnimation(.easeInOut(duration: 0.72)) { reveal = 1 }
+            DispatchQueue.main.async {
+                withAnimation(.easeInOut(duration: 0.72)) { reveal = 1 }
+            }
         }
         .task {
             // 하단 커스텀 툴바(가운데 알약) 충돌 바디 설정 — 스티커가 바에 안 가려지게.
