@@ -32,6 +32,7 @@ final class SceneHolder: ObservableObject {
     @Published var navToken = 0               // 폴더 진입/이탈마다 +1 → 뷰가 확장 전환 재생
     @Published var navAnchor: UnitPoint = .center   // 확장 전환의 기준점(탭한 폴더 도형 위치)
     @Published var navShape: FolderShape = .circle   // 확장 전환에 쓸 폴더 도형(원/사각/별…)
+    @Published var navColor: Color = .white           // 확장 전환 '뚜껑' 색(폴더 채움색)
     @Published var folderToEdit: Folder?      // 꾹 눌러 편집 / + 새 폴더 시트
     private(set) var creatingFolderId: UUID?  // folderToEdit가 새 폴더면 그 임시 id
 
@@ -114,21 +115,29 @@ final class SceneHolder: ObservableObject {
 
     func enterFolder(_ id: UUID, anchor: UnitPoint = .center) async {
         let folder = folders.first { $0.id == id }
-        currentFolder = folder
         scene.ejectEnabled = true   // 폴더 안: 뒤로가기로 빼기 가능
-        navAnchor = anchor          // 탭한 폴더 도형 위치에서 확장
-        if let folder { navShape = FolderShape.resolve(folder.shape, id: folder.id) }   // 폴더 모양대로 확장
-        navToken += 1               // 확장 전환 재생
-        await reload(folderId: id)
+        if let folder {
+            navAnchor = anchor                                       // 탭한 폴더 위치에서 뚜껑이 자란다
+            navShape = FolderShape.resolve(folder.shape, id: folder.id)  // 폴더 모양대로
+            navColor = FolderPalette.color(folder.color)             // 폴더 색으로
+        }
+        currentFolder = folder
+        navToken += 1               // 뚜껑(폴더색) 확장 시작 — 옛 화면은 아직 그대로
+        try? await Task.sleep(nanoseconds: Self.revealCoverNanos)   // 뚜껑이 덮을 때까지 기다렸다가
+        await reload(folderId: id)  // 내용 교체(뚜껑 뒤에서) → 이후 뚜껑이 걷히며 자연스럽게 드러남
     }
 
     func exitToRoot() async {
-        currentFolder = nil
         scene.ejectEnabled = false
         ejectHovering = false
-        navToken += 1               // 확장 전환 재생
+        currentFolder = nil
+        navToken += 1
+        try? await Task.sleep(nanoseconds: Self.revealCoverNanos)
         await reload(folderId: nil)
     }
+
+    /// 뚜껑이 화면을 덮는 데 걸리는 시간 — HomeView 전환의 '덮기 단계'와 맞춘다.
+    static let revealCoverNanos: UInt64 = 320_000_000
 
     /// `+` → 편집과 동일한 시트를 "새 폴더"로 띄운다(아직 서버에 없는 임시 폴더).
     func beginCreateFolder() {
@@ -284,11 +293,14 @@ struct HomeView: View {
     @EnvironmentObject private var pro: ProStore
     @ObservedObject var holder: SceneHolder
     @State private var showPaywall = false
-    @State private var reveal: CGFloat = 1   // 폴더 전환: 0=점 → 1=화면 가득(폴더 모양 마스크)
+    @State private var reveal: CGFloat = 1   // 폴더 전환 뚜껑: 0 → 1
+
+    // 뚜껑 타이밍(reveal 0..1). coverFrac는 SceneHolder.revealCoverNanos와 맞춘다.
+    private let revealCoverFrac: CGFloat = 0.44   // 이 지점에서 뚜껑이 화면을 완전히 덮음(≈320ms/720ms)
+    private let revealFadeStart: CGFloat = 0.5    // 이후부터 뚜껑이 걷히며 새 화면을 드러냄
 
     var body: some View {
         ZStack(alignment: .top) {
-            // 폴더 전환 시 항아리(씬+그리드)가 폴더 모양대로 그 위치에서 펼쳐지는 느낌.
             ZStack {
                 SpriteView(scene: holder.scene, options: [.ignoresSiblingOrder])
                     .ignoresSafeArea()
@@ -303,17 +315,26 @@ struct HomeView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .clipShape(FolderRevealShape(shape: holder.navShape, anchor: holder.navAnchor, progress: reveal))
-            .opacity(Double(min(1, max(0, reveal * 2))))
+
+            // 폴더색 뚜껑 — 탭한 폴더에서 그 모양대로 자라 덮은 뒤(뒤에서 내용 교체) 걷힌다.
+            if reveal < 0.999 {
+                FolderRevealShape(shape: holder.navShape, anchor: holder.navAnchor,
+                                  progress: min(1, reveal / revealCoverFrac))
+                    .fill(holder.navColor)
+                    .opacity(reveal < revealFadeStart ? 1
+                             : Double(max(0, 1 - (reveal - revealFadeStart) / (1 - revealFadeStart))))
+                    .ignoresSafeArea()
+                    .allowsHitTesting(true)   // 전환 중 터치 흡수
+            }
 
             topBar
                 .padding(.top, deviceSafeAreaTop + 4)
         }
         .animation(.easeInOut(duration: 0.45), value: holder.isGrid)
-        // 폴더 진입/이탈마다 폴더 모양이 0 → 1로 천천히 펼쳐진다.
+        // 폴더 진입/이탈마다 뚜껑이 0 → 1로 천천히 자랐다 걷힌다.
         .onChange(of: holder.navToken) { _, _ in
             reveal = 0
-            withAnimation(.easeInOut(duration: 0.64)) { reveal = 1 }
+            withAnimation(.easeInOut(duration: 0.72)) { reveal = 1 }
         }
         .task {
             // 하단 커스텀 툴바(가운데 알약) 충돌 바디 설정 — 스티커가 바에 안 가려지게.
