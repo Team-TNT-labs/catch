@@ -33,6 +33,7 @@ final class SceneHolder: ObservableObject {
     @Published var navAnchor: UnitPoint = .center   // 확장 전환의 기준점(탭한 폴더 도형 위치)
     @Published var navShape: FolderShape = .circle   // 확장 전환에 쓸 폴더 도형(원/사각/별…)
     @Published var navColor: Color = .white           // 확장 전환 '뚜껑' 색(폴더 채움색)
+    @Published var navCollapsing = false              // 뒤로가기(true)면 축소, 진입(false)이면 확장
     @Published var folderToEdit: Folder?      // 꾹 눌러 편집 / + 새 폴더 시트
     private(set) var creatingFolderId: UUID?  // folderToEdit가 새 폴더면 그 임시 id
 
@@ -121,6 +122,7 @@ final class SceneHolder: ObservableObject {
             navShape = FolderShape.resolve(folder.shape, id: folder.id)  // 폴더 모양대로
             navColor = FolderPalette.color(folder.color)             // 폴더 색으로
         }
+        navCollapsing = false       // 진입 = 확장
         currentFolder = folder
         navToken += 1               // 뚜껑(폴더색) 확장 시작 — 옛 화면은 아직 그대로
         try? await Task.sleep(nanoseconds: Self.revealCoverNanos)   // 뚜껑이 덮을 때까지 기다렸다가
@@ -130,6 +132,7 @@ final class SceneHolder: ObservableObject {
     func exitToRoot() async {
         scene.ejectEnabled = false
         ejectHovering = false
+        navCollapsing = true        // 뒤로가기 = 축소(떠나는 폴더 모양/색/위치로 빨려들어감)
         currentFolder = nil
         navToken += 1
         try? await Task.sleep(nanoseconds: Self.revealCoverNanos)
@@ -319,6 +322,7 @@ struct HomeView: View {
             // Animatable 모디파이어라 매 프레임 body가 불려, 덮기/페이드 단계 계산이 정확히 적용된다.
             .modifier(FolderRevealLid(
                 shape: holder.navShape, anchor: holder.navAnchor, color: holder.navColor,
+                collapsing: holder.navCollapsing,
                 t: reveal, coverFrac: revealCoverFrac, fadeStart: revealFadeStart))
 
             topBar
@@ -560,6 +564,7 @@ private struct FolderRevealLid: ViewModifier, Animatable {
     let shape: FolderShape
     let anchor: UnitPoint
     let color: Color
+    let collapsing: Bool
     var t: CGFloat
     let coverFrac: CGFloat
     let fadeStart: CGFloat
@@ -570,8 +575,17 @@ private struct FolderRevealLid: ViewModifier, Animatable {
     }
 
     func body(content: Content) -> some View {
-        let coverP = min(1, t / coverFrac)
-        let alpha: Double = t < fadeStart ? 1 : Double(max(0, 1 - (t - fadeStart) / (1 - fadeStart)))
+        let coverP: CGFloat
+        let alpha: Double
+        if collapsing {
+            // 축소: 전체 크기로 페이드인해 덮은 뒤(coverFrac), 폴더 점으로 줄어들며 루트를 드러냄.
+            alpha = Double(min(1, t / coverFrac))
+            coverP = t < fadeStart ? 1 : max(0, 1 - (t - fadeStart) / (1 - fadeStart))
+        } else {
+            // 확장: 폴더 점에서 자라 덮은 뒤(coverFrac), 페이드아웃하며 새 화면을 드러냄.
+            coverP = min(1, t / coverFrac)
+            alpha = t < fadeStart ? 1 : Double(max(0, 1 - (t - fadeStart) / (1 - fadeStart)))
+        }
         return content.overlay {
             if t < 0.999 {
                 FolderRevealShape(shape: shape, anchor: anchor, progress: coverP)
