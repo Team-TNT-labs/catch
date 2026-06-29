@@ -29,6 +29,7 @@ final class SceneHolder: ObservableObject {
     @Published var pendingDeleteId: UUID?     // 꾹 눌러 삭제 요청 → 확인 대기
     @Published var folders: [Folder] = []     // 내 폴더(루트에서 모양 노드로 표시)
     @Published var currentFolder: Folder?     // nil = 루트(미분류 + 폴더들)
+    @Published var navToken = 0               // 폴더 진입/이탈마다 +1 → 뷰가 확장 전환 재생
     @Published var folderToEdit: Folder?      // 꾹 눌러 편집 / + 새 폴더 시트
     private(set) var creatingFolderId: UUID?  // folderToEdit가 새 폴더면 그 임시 id
 
@@ -112,6 +113,7 @@ final class SceneHolder: ObservableObject {
     func enterFolder(_ id: UUID) async {
         currentFolder = folders.first { $0.id == id }
         scene.ejectEnabled = true   // 폴더 안: 뒤로가기로 빼기 가능
+        navToken += 1               // 확장 전환 재생
         await reload(folderId: id)
     }
 
@@ -119,6 +121,7 @@ final class SceneHolder: ObservableObject {
         currentFolder = nil
         scene.ejectEnabled = false
         ejectHovering = false
+        navToken += 1               // 확장 전환 재생
         await reload(folderId: nil)
     }
 
@@ -276,26 +279,37 @@ struct HomeView: View {
     @EnvironmentObject private var pro: ProStore
     @ObservedObject var holder: SceneHolder
     @State private var showPaywall = false
+    @State private var enterScale: CGFloat = 1   // 폴더 진입/이탈 시 항아리가 확장되는 전환
 
     var body: some View {
         ZStack(alignment: .top) {
-            SpriteView(scene: holder.scene, options: [.ignoresSiblingOrder])
-                .ignoresSafeArea()
+            // 폴더 전환 시 항아리(씬+그리드)가 작게 시작해 확 펼쳐지는 느낌.
+            ZStack {
+                SpriteView(scene: holder.scene, options: [.ignoresSiblingOrder])
+                    .ignoresSafeArea()
 
-            // 그리드 보기 — 작아지지 않게 고정 크기 스크롤 격자(물리 일시정지 위에 덮음).
-            if holder.isGrid {
-                gridView.transition(.opacity)
-            }
+                // 그리드 보기 — 작아지지 않게 고정 크기 스크롤 격자(물리 일시정지 위에 덮음).
+                if holder.isGrid {
+                    gridView.transition(.opacity)
+                }
 
-            if holder.isLoading {
-                CatchLoader()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                if holder.isLoading {
+                    CatchLoader()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
+            .scaleEffect(enterScale)
+            .opacity(Double(min(1, max(0, (enterScale - 0.8) / 0.2))))
 
             topBar
                 .padding(.top, deviceSafeAreaTop + 4)
         }
         .animation(.easeInOut(duration: 0.45), value: holder.isGrid)
+        // 폴더 진입/이탈마다 0.8 → 1로 스프링 확장(살짝 오버슈트).
+        .onChange(of: holder.navToken) { _, _ in
+            enterScale = 0.8
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.72)) { enterScale = 1 }
+        }
         .task {
             // 하단 커스텀 툴바(가운데 알약) 충돌 바디 설정 — 스티커가 바에 안 가려지게.
             // 실제 보이는 알약 치수(SetlogBottomBar)에서 계산 → 탭 수가 바뀌어도 자동 정렬.
