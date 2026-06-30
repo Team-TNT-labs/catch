@@ -10,6 +10,12 @@ enum SupabaseConfig {
 enum Supa {
     static let client = SupabaseClient(
         supabaseURL: SupabaseConfig.url,
-        supabaseKey: SupabaseConfig.anonKey
+        supabaseKey: SupabaseConfig.anonKey,
+        // 로컬 저장 세션을 그대로 초기 세션으로 방출(차기 메이저의 기본 동작). 미설정 시 런타임 경고 발생.
+        options: SupabaseClientOptions(
+            auth: SupabaseClientOptions.AuthOptions(
+                emitLocalSessionAsInitialSession: true
+            )
+        )
     )
 }
