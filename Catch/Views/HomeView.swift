@@ -254,7 +254,15 @@ final class SceneHolder: ObservableObject {
     }
 
     func add(_ c: CloudCatch) async {
-        if currentFolder != nil { await exitToRoot() }   // 새 캐치는 루트(미분류)로
+        var c = c
+        // 폴더 안에서 찍었으면 그 폴더 소속으로 만들어 폴더 뷰에 그대로 둔다.
+        // (예전엔 exitToRoot()로 루트로 빠져나가며 reload(nil) → 방금 만든(미분류) 캐치를 reload가 한 번,
+        //  아래 spawn이 또 한 번 생성해 폴더 밖에 스티커 2개가 생기는 버그였음.)
+        if let f = currentFolder {
+            repo.setFolder(c.id, folderId: f.id)
+            await FolderRepository.shared.assign(catchId: c.id, folderId: f.id)
+            c.folderId = f.id
+        }
         byId[c.id] = c
         catches.append(c)
         isEmpty = false
