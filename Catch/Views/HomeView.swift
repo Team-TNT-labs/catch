@@ -132,12 +132,7 @@ final class SceneHolder: ObservableObject {
     func exitToRoot() async {
         scene.ejectEnabled = false
         ejectHovering = false
-        navCollapsing = true        // 뒤로가기 = 축소
-        navAnchor = .center         // 축소는 화면 가운데를 중심으로 빨려들어감
-        if let f = currentFolder {  // 폴더 안에서 모양/색을 바꿨을 수 있으니 떠나는 시점 값으로 다시 읽음
-            navShape = FolderShape.resolve(f.shape, id: f.id)
-            navColor = FolderPalette.color(f.color)
-        }
+        navCollapsing = true        // 뒤로가기 = 일반 페이드 전환(도형 축소 아님). FolderRevealLid가 내용을 페이드.
         currentFolder = nil
         navToken += 1
         try? await Task.sleep(nanoseconds: Self.revealCoverNanos)
@@ -588,25 +583,22 @@ private struct FolderRevealLid: ViewModifier, Animatable {
     }
 
     func body(content: Content) -> some View {
-        let coverP: CGFloat
-        let alpha: Double
-        if collapsing {
-            // 축소: 전체 크기로 페이드인해 덮은 뒤(coverFrac), 폴더 점으로 줄어들며 루트를 드러냄.
-            alpha = Double(min(1, t / coverFrac))
-            coverP = t < fadeStart ? 1 : max(0, 1 - (t - fadeStart) / (1 - fadeStart))
-        } else {
-            // 확장: 폴더 점에서 자라 덮은 뒤(coverFrac), 페이드아웃하며 새 화면을 드러냄.
-            coverP = min(1, t / coverFrac)
-            alpha = t < fadeStart ? 1 : Double(max(0, 1 - (t - fadeStart) / (1 - fadeStart)))
-        }
-        return content.overlay {
-            if t < 0.999 {
-                FolderRevealShape(shape: shape, anchor: anchor, progress: coverP)
-                    .fill(color)
-                    .opacity(alpha)
-                    .ignoresSafeArea()
-                    .allowsHitTesting(true)   // 전환 중 터치 흡수
+        // 확장(진입): 폴더 점에서 자라 덮은 뒤(coverFrac) 페이드아웃하며 새 화면을 드러냄.
+        let coverP = min(1, t / coverFrac)
+        let lidAlpha = t < fadeStart ? 1 : Double(max(0, 1 - (t - fadeStart) / (1 - fadeStart)))
+        // 축소(뒤로가기) → 일반 페이드 전환: 내용이 사라졌다(뒤에서 교체) 다시 나타남.
+        let collapseAlpha: Double =
+            t < coverFrac ? Double(1 - t / coverFrac) : Double((t - coverFrac) / (1 - coverFrac))
+        return content
+            .opacity(collapsing && t < 0.999 ? collapseAlpha : 1)
+            .overlay {
+                if !collapsing && t < 0.999 {
+                    FolderRevealShape(shape: shape, anchor: anchor, progress: coverP)
+                        .fill(color)
+                        .opacity(lidAlpha)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(true)   // 전환 중 터치 흡수
+                }
             }
-        }
     }
 }
