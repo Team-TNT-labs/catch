@@ -586,11 +586,15 @@ private struct FolderRevealLid: ViewModifier, Animatable {
         // 확장(진입): 폴더 점에서 자라 덮은 뒤(coverFrac) 페이드아웃하며 새 화면을 드러냄.
         let coverP = min(1, t / coverFrac)
         let lidAlpha = t < fadeStart ? 1 : Double(max(0, 1 - (t - fadeStart) / (1 - fadeStart)))
-        // 축소(뒤로가기) → 일반 페이드 전환: 내용이 사라졌다(뒤에서 교체) 다시 나타남.
-        let collapseAlpha: Double =
-            t < coverFrac ? Double(1 - t / coverFrac) : Double((t - coverFrac) / (1 - coverFrac))
+        // 축소(뒤로가기) → 슬라이드 전환(pop): 현재 내용이 오른쪽으로 밀려나가고(0→+W),
+        // 뒤에서 교체된 뒤 새 내용이 왼쪽에서 밀려들어온다(-W→0).
+        let w = UIScreen.main.bounds.width
+        let slideX: CGFloat =
+            (collapsing && t < 0.999)
+            ? (t < coverFrac ? (t / coverFrac) * w : -w + ((t - coverFrac) / (1 - coverFrac)) * w)
+            : 0
         return content
-            .opacity(collapsing && t < 0.999 ? collapseAlpha : 1)
+            .offset(x: slideX)
             .overlay {
                 if !collapsing && t < 0.999 {
                     FolderRevealShape(shape: shape, anchor: anchor, progress: coverP)
